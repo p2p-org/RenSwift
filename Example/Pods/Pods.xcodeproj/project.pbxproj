@@ -22,7 +22,6 @@
 		7EECE9FCF5E07473E6D0FE80BFCB94C9 /* BigInt-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 62F3C0C287A51DF6E535C334E2CBC3AA /* BigInt-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8532AFAE5B4DE21DCAFB19AB0E4434EB /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 51F1D9413169CDC36EDC4F68C56857DE /* Foundation.framework */; };
 		8599E23B2946C6F3F6DA3D63EC82C4A3 /* Words and Bits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6DD6C0A3208287CBFAD49A720A45C5 /* Words and Bits.swift */; };
-		9120EAC1F8471369C66107A8A9FB6AD0 /* ABI+Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34180B7AAB4989E35392E900AAFDFBE9 /* ABI+Models.swift */; };
 		96E06C8E56B96832357413BE9002BFF4 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 51F1D9413169CDC36EDC4F68C56857DE /* Foundation.framework */; };
 		97B8392D816FE090587606C315CF70CF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 51F1D9413169CDC36EDC4F68C56857DE /* Foundation.framework */; };
 		989208DDB73B5B2B47525677BC7A852C /* Pods-RenSwift_Tests-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 478B9D5DAA4372716B1A2D51F189AE9E /* Pods-RenSwift_Tests-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -32,6 +31,8 @@
 		ACA64549AD5D3C97F9E3865726BB2A82 /* ABI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE2242C4FBC5DD9DB4BD9DBCAFFEE2C /* ABI.swift */; };
 		AF8B64E1C5B9B28B4B3D5A5237C001D8 /* Pods-RenSwift_Example-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = E0B6140085A4CC9EED2F3C2E7C2F619A /* Pods-RenSwift_Example-dummy.m */; };
 		BAA052C302D45F8DAB72606E997CAD69 /* Subtraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A32D8F5937203751942B84436F0134B /* Subtraction.swift */; };
+		BCC13F4D26BA7140007CADCF /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC13F4C26BA7140007CADCF /* Error.swift */; };
+		BCC13F4F26BA71D7007CADCF /* Networks.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC13F4E26BA71D7007CADCF /* Networks.swift */; };
 		BE29AFA73FEDAFA471F35F8AB1C3EA99 /* Shifts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21ACE00CCD056C20D1BB7F94A3DC5E11 /* Shifts.swift */; };
 		BE7E015A708DCA2A089EA11998AD4B32 /* Pods-RenSwift_Tests-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A0B79AE4F3F8F37EEA21B73130C9DA1 /* Pods-RenSwift_Tests-dummy.m */; };
 		C4FA5D862FC3B4FF004BCB978AA30445 /* ETHArgs.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CB5A6BFB7ACD93079BDC01ABD0559D /* ETHArgs.swift */; };
@@ -90,7 +91,6 @@
 		2E37C9409DCDDDE7523B26481DB4A484 /* BigInt.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.module; path = BigInt.modulemap; sourceTree = "<group>"; };
 		2FBF4D90053486704A97E94EDA09BBFC /* Pods_RenSwift_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RenSwift_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		30E5028F35703F5C4B0857EA1CAE7618 /* Square Root.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = "Square Root.swift"; path = "Sources/Square Root.swift"; sourceTree = "<group>"; };
-		34180B7AAB4989E35392E900AAFDFBE9 /* ABI+Models.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ABI+Models.swift"; sourceTree = "<group>"; };
 		4066F84467C934797506966DFC2E2B01 /* Pods-RenSwift_Example-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-RenSwift_Example-acknowledgements.plist"; sourceTree = "<group>"; };
 		4260D471DF363021588BAEC4D373B729 /* Pods-RenSwift_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-RenSwift_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		42CD9E0FE40EAA192F4C7195A9AE1D18 /* BigInt-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "BigInt-Info.plist"; sourceTree = "<group>"; };
@@ -129,6 +129,8 @@
 		AD2756E53E5C30C3FFE13BA498A9DFC7 /* Pods-RenSwift_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-RenSwift_Example.debug.xcconfig"; sourceTree = "<group>"; };
 		AE4880F4C3C4DBB68F752D1031694934 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B8CB5A6BFB7ACD93079BDC01ABD0559D /* ETHArgs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ETHArgs.swift; sourceTree = "<group>"; };
+		BCC13F4C26BA7140007CADCF /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
+		BCC13F4E26BA71D7007CADCF /* Networks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networks.swift; sourceTree = "<group>"; };
 		C0AC8DCCB10E93E716BF756CD2DB3EFD /* RenSwift.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; path = RenSwift.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		C21FA016970A9B08BCAE43BE75F69E5F /* Comparable.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Comparable.swift; path = Sources/Comparable.swift; sourceTree = "<group>"; };
 		CE790A1441224BED67326791B0F7DA41 /* Pods-RenSwift_Example-frameworks.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-RenSwift_Example-frameworks.sh"; sourceTree = "<group>"; };
@@ -213,7 +215,6 @@
 		1320C76755BC35ABFC835BA77CB0DE24 /* RenSwift */ = {
 			isa = PBXGroup;
 			children = (
-				FF3420C96D920D8FE1AEF480B25A729A /* Interfaces */,
 				AF3539212F5D1381B59F3F79A53D34A6 /* Models */,
 				C41392E2EEB07D8B2F3AA0D115A14D39 /* Pod */,
 				ED1D9C4C78EF2D472418D10E8FE4748C /* Support Files */,
@@ -274,7 +275,10 @@
 		AF3539212F5D1381B59F3F79A53D34A6 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				34180B7AAB4989E35392E900AAFDFBE9 /* ABI+Models.swift */,
+				8EE2242C4FBC5DD9DB4BD9DBCAFFEE2C /* ABI.swift */,
+				B8CB5A6BFB7ACD93079BDC01ABD0559D /* ETHArgs.swift */,
+				BCC13F4C26BA7140007CADCF /* Error.swift */,
+				BCC13F4E26BA71D7007CADCF /* Networks.swift */,
 			);
 			name = Models;
 			path = RenSwift/Classes/Models;
@@ -371,16 +375,6 @@
 			);
 			name = "Support Files";
 			path = "Example/Pods/Target Support Files/RenSwift";
-			sourceTree = "<group>";
-		};
-		FF3420C96D920D8FE1AEF480B25A729A /* Interfaces */ = {
-			isa = PBXGroup;
-			children = (
-				8EE2242C4FBC5DD9DB4BD9DBCAFFEE2C /* ABI.swift */,
-				B8CB5A6BFB7ACD93079BDC01ABD0559D /* ETHArgs.swift */,
-			);
-			name = Interfaces;
-			path = RenSwift/Classes/Interfaces;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -563,9 +557,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9120EAC1F8471369C66107A8A9FB6AD0 /* ABI+Models.swift in Sources */,
 				ACA64549AD5D3C97F9E3865726BB2A82 /* ABI.swift in Sources */,
 				C4FA5D862FC3B4FF004BCB978AA30445 /* ETHArgs.swift in Sources */,
+				BCC13F4D26BA7140007CADCF /* Error.swift in Sources */,
+				BCC13F4F26BA71D7007CADCF /* Networks.swift in Sources */,
 				C928DA5B3E107B9D83DEE2D06DD95EB7 /* RenSwift-dummy.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

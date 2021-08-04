@@ -7,6 +7,14 @@
 
 import Foundation
 
+enum AbiType: String {
+    case function, constructor, event, fallback
+}
+
+enum StateMutabilityType: String {
+    case pure, view, nonpayable, payable
+}
+
 protocol AbiItem {
     var anonymous: Bool? {get}
     var constant: Bool? {get}
