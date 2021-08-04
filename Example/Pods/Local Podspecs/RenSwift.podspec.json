@@ -22,6 +22,9 @@
   "dependencies": {
     "BigInt": [
       "~> 5.2"
+    ],
+    "PromiseKit": [
+      "~> 6.8"
     ]
   }
 }

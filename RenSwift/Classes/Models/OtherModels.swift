@@ -10,6 +10,8 @@ import Foundation
 typealias Base64String = String
 typealias HexString = String
 typealias BigNumber = Decimal
+typealias Number = Decimal
+typealias TransactionID = String // String | Buffer
 
 enum LockAndMintStatus: String {
     case Committed = "mint_committed",

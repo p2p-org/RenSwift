@@ -1,7 +1,17 @@
 PODS:
   - BigInt (5.2.0)
+  - PromiseKit (6.15.3):
+    - PromiseKit/CorePromise (= 6.15.3)
+    - PromiseKit/Foundation (= 6.15.3)
+    - PromiseKit/UIKit (= 6.15.3)
+  - PromiseKit/CorePromise (6.15.3)
+  - PromiseKit/Foundation (6.15.3):
+    - PromiseKit/CorePromise
+  - PromiseKit/UIKit (6.15.3):
+    - PromiseKit/CorePromise
   - RenSwift (0.1.0):
     - BigInt (~> 5.2)
+    - PromiseKit (~> 6.8)
 
 DEPENDENCIES:
   - RenSwift (from `../`)
@@ -9,6 +19,7 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - BigInt
+    - PromiseKit
 
 EXTERNAL SOURCES:
   RenSwift:
@@ -16,7 +27,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   BigInt: f668a80089607f521586bbe29513d708491ef2f7
-  RenSwift: e3ad71d92664f3d8ee11c5681cc8ff294f049926
+  PromiseKit: 3b2b6995e51a954c46dbc550ce3da44fbfb563c5
+  RenSwift: 9de41cb7922a5965fee01d28ee3da4b339222d24
 
 PODFILE CHECKSUM: bd2ae4206b893cbc90bbebcbc362c39a72b130dd
 
