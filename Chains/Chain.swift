@@ -152,7 +152,6 @@ protocol ChainCommon: ChainStatic {
     ) -> String?
 }
 
-
 /**
  * Chains should provide a set of static utilities.
  */
