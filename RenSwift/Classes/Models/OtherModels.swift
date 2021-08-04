@@ -12,6 +12,7 @@ typealias HexString = String
 typealias BigNumber = Decimal
 typealias Number = Decimal
 typealias TransactionID = String // String | Buffer
+typealias Nonce = String // Data | String | number
 
 enum LockAndMintStatus: String {
     case Committed = "mint_committed",
