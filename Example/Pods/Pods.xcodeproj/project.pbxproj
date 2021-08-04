@@ -35,6 +35,7 @@
 		BCC13F4F26BA71D7007CADCF /* Networks.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC13F4E26BA71D7007CADCF /* Networks.swift */; };
 		BCC13F5126BA75C0007CADCF /* BN.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC13F5026BA75C0007CADCF /* BN.swift */; };
 		BCC13F5326BA7643007CADCF /* OtherModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC13F5226BA7643007CADCF /* OtherModels.swift */; };
+		BCC13F5526BA7782007CADCF /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC13F5426BA7782007CADCF /* Transaction.swift */; };
 		BE29AFA73FEDAFA471F35F8AB1C3EA99 /* Shifts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21ACE00CCD056C20D1BB7F94A3DC5E11 /* Shifts.swift */; };
 		BE7E015A708DCA2A089EA11998AD4B32 /* Pods-RenSwift_Tests-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A0B79AE4F3F8F37EEA21B73130C9DA1 /* Pods-RenSwift_Tests-dummy.m */; };
 		C4FA5D862FC3B4FF004BCB978AA30445 /* ETHArgs.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CB5A6BFB7ACD93079BDC01ABD0559D /* ETHArgs.swift */; };
@@ -135,6 +136,7 @@
 		BCC13F4E26BA71D7007CADCF /* Networks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networks.swift; sourceTree = "<group>"; };
 		BCC13F5026BA75C0007CADCF /* BN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BN.swift; sourceTree = "<group>"; };
 		BCC13F5226BA7643007CADCF /* OtherModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherModels.swift; sourceTree = "<group>"; };
+		BCC13F5426BA7782007CADCF /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
 		C0AC8DCCB10E93E716BF756CD2DB3EFD /* RenSwift.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; path = RenSwift.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		C21FA016970A9B08BCAE43BE75F69E5F /* Comparable.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Comparable.swift; path = Sources/Comparable.swift; sourceTree = "<group>"; };
 		CE790A1441224BED67326791B0F7DA41 /* Pods-RenSwift_Example-frameworks.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-RenSwift_Example-frameworks.sh"; sourceTree = "<group>"; };
@@ -285,6 +287,7 @@
 				BCC13F4E26BA71D7007CADCF /* Networks.swift */,
 				BCC13F5026BA75C0007CADCF /* BN.swift */,
 				BCC13F5226BA7643007CADCF /* OtherModels.swift */,
+				BCC13F5426BA7782007CADCF /* Transaction.swift */,
 			);
 			name = Models;
 			path = RenSwift/Classes/Models;
@@ -565,6 +568,7 @@
 			files = (
 				ACA64549AD5D3C97F9E3865726BB2A82 /* ABI.swift in Sources */,
 				C4FA5D862FC3B4FF004BCB978AA30445 /* ETHArgs.swift in Sources */,
+				BCC13F5526BA7782007CADCF /* Transaction.swift in Sources */,
 				BCC13F4D26BA7140007CADCF /* Error.swift in Sources */,
 				BCC13F4F26BA71D7007CADCF /* Networks.swift in Sources */,
 				BCC13F5326BA7643007CADCF /* OtherModels.swift in Sources */,
