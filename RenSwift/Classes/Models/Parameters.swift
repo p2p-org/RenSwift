@@ -109,12 +109,12 @@ protocol LockAndMintParams: TransferParamsCommon {
      * The chain that the asset is native to - e.g. `Bitcoin()` for bridging the
      * asset `"BTC"`.
      */
-    var from: LockChain<LockTransaction, LockDeposit, LockAddress> {get}
+    var from: LockChainType {get}
 
     /**
      * The chain that the asset is being bridged to - e.g. `Ethereum(provider)`.
      */
-    var to: MintChain<MintTransaction, MintAddress> {get}
+    var to: MintChainType {get}
 }
 
 /**
@@ -122,24 +122,25 @@ protocol LockAndMintParams: TransferParamsCommon {
  * from Ethereum.
  */
 protocol BurnAndReleaseParams: TransferParamsCommon {
+    associatedtype MintTransaction
     /**
      * The chain from which the ren-asset was burned - e.g. `Ethereum(provider)`.
      */
-    var from: MintChain<MintTransaction, MintAddress> {get}
+    var from: MintChainType {get}
 
     /**
      * The asset's native chain to which it's being returned - e.g. `Bitcoin()`
      * for the asset `"BTC"`.
      */
-    var to: LockChain<LockTransaction, LockDeposit, LockAddress> {get}
+    var to: LockChainType {get}
 
     /**
      * The hash of the burn transaction on the MintChain.
      */
-    var transaction?: MintTransaction {get}
+    var transaction: MintTransaction? {get}
 
     /**
      * The unique identifier of the burn emitted from the event on the MintChain.
      */
-    var burnNonce?: Buffer | string | number;
+    var burnNonce: Nonce? {get}
 }

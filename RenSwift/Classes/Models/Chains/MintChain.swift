@@ -26,7 +26,9 @@ typealias OverwritableBurnAndReleaseParams = TransferParamsCommon
 //    "from"
 //>
 
-protocol MintChain: ChainCommon {
+protocol MintChainType {}
+
+protocol MintChain: ChainCommon, MintChainType {
     func resolveTokenGatewayContract(asset: String) -> Promise<String>
 
     /**

@@ -23,7 +23,9 @@ struct DepositCommon<Transaction> {
  * Bitcoin LockChain and overwrite methods as necessary. See the ZCash and
  * BitcoinCash implementations for examples of this.
  */
-protocol LockChain: ChainCommon {
+protocol LockChainType {}
+
+protocol LockChain: ChainCommon, LockChainType {
     /**
      * GetDeposits can track its progress using a `progress` value.
      */
