@@ -1,6 +1,6 @@
 # RenSwift
 
-[![CI Status](https://img.shields.io/travis/Chung Tran/RenSwift.svg?style=flat)](https://travis-ci.org/Chung Tran/RenSwift)
+[![CI Status](https://img.shields.io/travis/p2p-org/RenSwift.svg?style=flat)](https://travis-ci.org/p2p-org/RenSwift)
 [![Version](https://img.shields.io/cocoapods/v/RenSwift.svg?style=flat)](https://cocoapods.org/pods/RenSwift)
 [![License](https://img.shields.io/cocoapods/l/RenSwift.svg?style=flat)](https://cocoapods.org/pods/RenSwift)
 [![Platform](https://img.shields.io/cocoapods/p/RenSwift.svg?style=flat)](https://cocoapods.org/pods/RenSwift)
