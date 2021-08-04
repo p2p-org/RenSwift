@@ -1,0 +1,27 @@
+{
+  "name": "RenSwift",
+  "version": "0.1.0",
+  "summary": "An implementation of RenVM written in PureSwift.",
+  "description": "An implementation of RenVM written in PureSwift. This project is ported from ren-js",
+  "homepage": "https://github.com/p2p-org/RenSwift",
+  "license": {
+    "type": "MIT",
+    "file": "LICENSE"
+  },
+  "authors": {
+    "Chung Tran": "bigearsenal@gmail.com"
+  },
+  "source": {
+    "git": "https://github.com/p2p-org/RenSwift.git",
+    "tag": "0.1.0"
+  },
+  "platforms": {
+    "ios": "12.0"
+  },
+  "source_files": "RenSwift/Classes/**/*",
+  "dependencies": {
+    "BigInt": [
+      "~> 5.2"
+    ]
+  }
+}

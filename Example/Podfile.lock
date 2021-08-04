@@ -1,0 +1,23 @@
+PODS:
+  - BigInt (5.2.0)
+  - RenSwift (0.1.0):
+    - BigInt (~> 5.2)
+
+DEPENDENCIES:
+  - RenSwift (from `../`)
+
+SPEC REPOS:
+  trunk:
+    - BigInt
+
+EXTERNAL SOURCES:
+  RenSwift:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  BigInt: f668a80089607f521586bbe29513d708491ef2f7
+  RenSwift: e3ad71d92664f3d8ee11c5681cc8ff294f049926
+
+PODFILE CHECKSUM: bd2ae4206b893cbc90bbebcbc362c39a72b130dd
+
+COCOAPODS: 1.10.1
