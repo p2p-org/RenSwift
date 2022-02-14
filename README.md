@@ -13,11 +13,11 @@ To run the example project, clone the repo, and run `pod install` from the Examp
 
 ## Installation
 
-RenSwift is available through [CocoaPods](https://cocoapods.org). To install
+RenVMSwift is available through [CocoaPods](https://cocoapods.org). To install
 it, simply add the following line to your Podfile:
 
 ```ruby
-pod 'RenSwift'
+pod 'RenVMSwift'
 ```
 
 ## Author

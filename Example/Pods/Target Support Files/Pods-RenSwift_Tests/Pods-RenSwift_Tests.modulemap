@@ -1,6 +1,0 @@
-framework module Pods_RenSwift_Tests {
-  umbrella header "Pods-RenSwift_Tests-umbrella.h"
-
-  export *
-  module * { export * }
-}

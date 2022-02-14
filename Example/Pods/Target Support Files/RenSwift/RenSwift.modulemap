@@ -1,6 +1,0 @@
-framework module RenSwift {
-  umbrella header "RenSwift-umbrella.h"
-
-  export *
-  module * { export * }
-}
