@@ -20,7 +20,8 @@ extension RenVM {
         static func solanaChain(network: RenVM.Network = .testnet) -> SolanaChain {
             try! RenVM.SolanaChain.load(
                 client: RpcClient(network: network),
-                solanaClient: SolanaClient()
+                solanaClient: SolanaClient(),
+                sender: SolanaTransactionSender()
             ).toBlocking().first()!
         }
         
@@ -40,12 +41,6 @@ extension RenVM {
         
         struct SolanaClient: RenVMSolanaAPIClientType {
             func getAccountInfo<T>(account: String, decodedTo: T.Type) -> Single<SolanaSDK.BufferInfo<T>> where T : DecodableBufferLayout {
-                if decodedTo == RenVM.SolanaChain.GatewayRegistryData.self {
-                    let data = Data(base64Encoded: RenVM.Mock.mockGatewayRegistryData)!
-                    var pointer = 0
-                    let gatewayRegistryData = try! RenVM.SolanaChain.GatewayRegistryData(buffer: data, pointer: &pointer)
-                    return .just(.init(lamports: 0, owner: "", data: gatewayRegistryData as! T, executable: true, rentEpoch: 0))
-                }
                 fatalError()
             }
             
@@ -57,7 +52,21 @@ extension RenVM {
                 fatalError()
             }
             
-            func serializeAndSend(instructions: [SolanaSDK.TransactionInstruction], recentBlockhash: String?, signers: [SolanaSDK.Account], isSimulation: Bool) -> Single<String> {
+            func getMinimumBalanceForRentExemption(span: UInt64) -> Single<UInt64> {
+                fatalError()
+            }
+            
+            func prepareTransaction(instructions: [SolanaSDK.TransactionInstruction], signers: [SolanaSDK.Account], feePayer: SolanaSDK.PublicKey, accountsCreationFee: SolanaSDK.Lamports, recentBlockhash: String?, lamportsPerSignature: SolanaSDK.Lamports?) -> Single<SolanaSDK.PreparedTransaction> {
+                fatalError()
+            }
+        }
+        
+        struct SolanaTransactionSender: RenVMSolanaTransactionSenderType {
+            func getFeePayer() -> Single<SolanaSDK.PublicKey> {
+                fatalError()
+            }
+            
+            func serializeAndSend(preparedTransaction: SolanaSDK.PreparedTransaction, isSimulation: Bool) -> Single<String> {
                 fatalError()
             }
         }

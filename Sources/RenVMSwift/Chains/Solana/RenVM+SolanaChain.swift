@@ -7,8 +7,8 @@
 
 import Foundation
 import RxSwift
-import BufferLayoutSwift
 import SolanaSwift
+import BufferLayoutSwift
 
 public protocol RenVMSolanaAPIClientType {
     func getAccountInfo<T: DecodableBufferLayout>(account: String, decodedTo: T.Type) -> Single<SolanaSDK.BufferInfo<T>>
@@ -17,10 +17,22 @@ public protocol RenVMSolanaAPIClientType {
         programId: String
     ) -> Single<SolanaSDK.Mint>
     func getConfirmedSignaturesForAddress2(account: String, configs: SolanaSDK.RequestConfiguration?) -> Single<[SolanaSDK.SignatureInfo]>
-    func serializeAndSend(
+    func getMinimumBalanceForRentExemption(span: UInt64) -> Single<UInt64>
+    func prepareTransaction(
         instructions: [SolanaSDK.TransactionInstruction],
-        recentBlockhash: String?,
         signers: [SolanaSDK.Account],
+        feePayer: SolanaSDK.PublicKey,
+        accountsCreationFee: SolanaSDK.Lamports,
+        recentBlockhash: String?,
+        lamportsPerSignature: SolanaSDK.Lamports?
+    ) -> Single<SolanaSDK.PreparedTransaction>
+}
+
+public protocol RenVMSolanaTransactionSenderType {
+    func getFeePayer() -> Single<SolanaSDK.PublicKey>
+    
+    func serializeAndSend(
+        preparedTransaction: SolanaSDK.PreparedTransaction,
         isSimulation: Bool
     ) -> Single<String>
 }
@@ -36,11 +48,13 @@ extension RenVM {
         let gatewayRegistryData: GatewayRegistryData
         let client: RenVMRpcClientType
         let solanaClient: RenVMSolanaAPIClientType
+        let sender: RenVMSolanaTransactionSenderType
         
         // MARK: - Methods
         public static func load(
             client: RenVMRpcClientType,
-            solanaClient: RenVMSolanaAPIClientType
+            solanaClient: RenVMSolanaAPIClientType,
+            sender: RenVMSolanaTransactionSenderType
         ) -> Single<Self> {
             do {
                 let pubkey = try SolanaSDK.PublicKey(string: client.network.gatewayRegistry)
@@ -53,7 +67,7 @@ extension RenVM {
                     decodedTo: GatewayRegistryData.self
                 )
                 .map {$0.data}
-                .map {.init(gatewayRegistryData: $0, client: client, solanaClient: solanaClient)}
+                .map {.init(gatewayRegistryData: $0, client: client, solanaClient: solanaClient, sender: sender)}
             } catch {
                 return .error(error)
             }
@@ -105,24 +119,31 @@ extension RenVM {
             mintTokenSymbol: String,
             signer: SolanaSDK.Account
         ) -> Single<String> {
-            do {
-                let tokenMint = try getSPLTokenPubkey(mintTokenSymbol: mintTokenSymbol)
-                let associatedTokenAddress = try getAssociatedTokenAddress(address: address.data, mintTokenSymbol: mintTokenSymbol)
-                let createAccountInstruction = SolanaSDK.AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
-                    mint: tokenMint,
-                    associatedAccount: try SolanaSDK.PublicKey(data: associatedTokenAddress),
-                    owner: address,
-                    payer: signer.publicKey
-                )
-                return solanaClient.serializeAndSend(
-                    instructions: [createAccountInstruction],
-                    recentBlockhash: nil,
-                    signers: [signer],
-                    isSimulation: false
-                )
-            } catch {
-                return .error(error)
-            }
+            Single.zip(
+                sender.getFeePayer(),
+                solanaClient.getMinimumBalanceForRentExemption(span: 165)
+            )
+                .flatMap { feePayer, accountCreationFee -> Single<SolanaSDK.PreparedTransaction> in
+                    let tokenMint = try getSPLTokenPubkey(mintTokenSymbol: mintTokenSymbol)
+                    let associatedTokenAddress = try getAssociatedTokenAddress(address: address.data, mintTokenSymbol: mintTokenSymbol)
+                    let createAccountInstruction = SolanaSDK.AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+                        mint: tokenMint,
+                        associatedAccount: try SolanaSDK.PublicKey(data: associatedTokenAddress),
+                        owner: address,
+                        payer: feePayer
+                    )
+                    return solanaClient.prepareTransaction(
+                        instructions: [createAccountInstruction],
+                        signers: [signer],
+                        feePayer: feePayer,
+                        accountsCreationFee: accountCreationFee,
+                        recentBlockhash: nil,
+                        lamportsPerSignature: nil
+                    )
+                }
+                .flatMap { preparedTransaction in
+                    sender.serializeAndSend(preparedTransaction: preparedTransaction, isSimulation: false)
+                }
         }
         
         public func submitMint(
@@ -196,22 +217,30 @@ extension RenVM {
             ).map {$0.data}
             
             return requestGatewayInfo
-                .flatMap {gatewayState in
+                .flatMap {gatewayState -> Single<SolanaSDK.PreparedTransaction> in
                     let secpInstruction = RenProgram.createInstructionWithEthAddress2(
                         ethAddress: Data(gatewayState.renVMAuthority.bytes),
                         message: renVMMessage,
                         signature: sig[0..<64],
                         recoveryId: sig[64] - 27
                     )
-                    return self.solanaClient.serializeAndSend(
-                        instructions: [
-                            mintInstruction,
-                            secpInstruction
-                        ],
-                        recentBlockhash: nil,
-                        signers: [signer],
-                        isSimulation: false
-                    )
+                    return sender.getFeePayer()
+                        .flatMap { feePayer in
+                            solanaClient.prepareTransaction(
+                                instructions: [
+                                    mintInstruction,
+                                    secpInstruction
+                                ],
+                                signers: [signer],
+                                feePayer: feePayer,
+                                accountsCreationFee: 0,
+                                recentBlockhash: nil,
+                                lamportsPerSignature: nil
+                            )
+                        }
+                }
+                .flatMap { preparedTransaction in
+                    sender.serializeAndSend(preparedTransaction: preparedTransaction, isSimulation: false)
                 }
         }
         
@@ -264,18 +293,26 @@ extension RenVM {
                             programId: program
                         )
                         
-                        return self.solanaClient.serializeAndSend(
-                            instructions: [
-                                burnCheckedInstruction,
-                                burnInstruction
-                            ],
-                            recentBlockhash: nil,
-                            signers: [signer],
-                            isSimulation: false
-                        )
-                        .map {signature in
-                            .init(confirmedSignature: signature, nonce: nonce, recipient: recipient, amount: amountString)
-                        }
+                        return sender.getFeePayer()
+                            .flatMap { feePayer in
+                                solanaClient.prepareTransaction(
+                                    instructions: [
+                                        burnCheckedInstruction,
+                                        burnInstruction
+                                    ],
+                                    signers: [signer],
+                                    feePayer: feePayer,
+                                    accountsCreationFee: 0,
+                                    recentBlockhash: nil,
+                                    lamportsPerSignature: nil
+                                )
+                                    .flatMap { preparedTransaction in
+                                        sender.serializeAndSend(preparedTransaction: preparedTransaction, isSimulation: false)
+                                    }
+                            }
+                            .map {signature in
+                                .init(confirmedSignature: signature, nonce: nonce, recipient: recipient, amount: amountString)
+                            }
                     }
                 
             } catch {

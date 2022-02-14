@@ -44,7 +44,7 @@ class RenVMBurnAndReleaseTests: RestAPITests {
     func testBurnAndRelease() throws {
         let rpcClient = RenVM.RpcClient(network: .testnet)
         
-        let solanaChain = try RenVM.SolanaChain.load(client: rpcClient, solanaClient: solanaSDK).toBlocking().first()!
+        let solanaChain = try RenVM.SolanaChain.load(client: rpcClient, solanaClient: solanaSDK, sender: solanaSDK).toBlocking().first()!
         
         let recipient = "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt"
         

@@ -6,6 +6,13 @@
 //
 
 import Foundation
+import RxSwift
 import SolanaSwift
 
 extension SolanaSDK: RenVMSolanaAPIClientType {}
+extension SolanaSDK: RenVMSolanaTransactionSenderType {
+    public func getFeePayer() -> Single<PublicKey> {
+        guard let account = accountStorage.account else {return .error(Error.unauthorized)}
+        return .just(account.publicKey)
+    }
+}
