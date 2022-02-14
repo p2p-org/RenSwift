@@ -9,6 +9,7 @@
 import XCTest
 import RxSwift
 @testable import SolanaSwift
+@testable import RenVMSwift
 
 class RenVMSolanaChainTests: XCTestCase {
     func testGatewayRegistryStateKey() throws {

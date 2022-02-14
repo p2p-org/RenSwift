@@ -9,6 +9,7 @@
 import Foundation
 import XCTest
 @testable import SolanaSwift
+@testable import RenVMSwift
 
 class RenVMRenProgramTests: XCTestCase {
     func testCreateInstructionWithEthAddress2() throws {

@@ -9,6 +9,7 @@
 import Foundation
 import XCTest
 @testable import SolanaSwift
+@testable import RenVMSwift
 
 class RenVMBurnAndReleaseTests: RestAPITests {
     override var endpoint: SolanaSDK.APIEndPoint {

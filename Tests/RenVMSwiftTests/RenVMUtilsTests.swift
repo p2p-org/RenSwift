@@ -8,6 +8,7 @@
 
 import XCTest
 @testable import SolanaSwift
+@testable import RenVMSwift
 
 class RenVMUtilsTests: XCTestCase {
 

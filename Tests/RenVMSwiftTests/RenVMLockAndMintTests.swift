@@ -8,6 +8,7 @@
 
 import XCTest
 @testable import SolanaSwift
+@testable import RenVMSwift
 
 class RenVMLockAndMintTests: XCTestCase {
     let destinationAddress: SolanaSDK.PublicKey = "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"

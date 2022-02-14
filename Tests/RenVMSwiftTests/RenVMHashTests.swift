@@ -9,6 +9,7 @@
 import Foundation
 import XCTest
 @testable import SolanaSwift
+@testable import RenVMSwift
 
 class RenVMHashTests: XCTestCase {
     func testSha256() throws {

@@ -8,6 +8,7 @@
 import Foundation
 import RxAlamofire
 import RxSwift
+import SolanaSwift
 
 public protocol RenVMRpcClientType {
     var network: RenVM.Network {get}
@@ -151,5 +152,12 @@ extension RenVM {
             public let error: RenVM.Error?
             public let method: String?
         }
+    }
+}
+
+extension Encodable {
+    var jsonString: String? {
+        guard let data = try? JSONEncoder().encode(self) else {return nil}
+        return String(data: data, encoding: .utf8)
     }
 }

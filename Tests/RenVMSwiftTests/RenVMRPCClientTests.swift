@@ -8,7 +8,7 @@
 
 import Foundation
 import XCTest
-@testable import SolanaSwift
+@testable import RenVMSwift
 
 class RenVMRPCClientTests: XCTestCase {
     func testEncodeBody() throws {

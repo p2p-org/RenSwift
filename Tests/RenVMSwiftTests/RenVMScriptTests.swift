@@ -9,6 +9,7 @@
 import Foundation
 import XCTest
 @testable import SolanaSwift
+@testable import RenVMSwift
 
 class RenVMScriptTests: XCTestCase {
     func testGatewayScript() throws {
