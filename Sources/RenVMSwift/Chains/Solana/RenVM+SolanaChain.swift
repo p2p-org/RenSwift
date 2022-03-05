@@ -23,6 +23,8 @@ public protocol RenVMSolanaAPIClientType {
         signers: [SolanaSDK.Account],
         isSimulation: Bool
     ) -> Single<String>
+    
+    func waitForConfirmation(signature: String) -> Completable
 }
 
 extension RenVM {
