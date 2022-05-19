@@ -26,7 +26,7 @@ class RenVMRPCClientTests: XCTestCase {
         )
         
         let hash = "nrRusEWs3bn619zTGc1937EakvCGvjbt5gYr4L2PL_M"
-        let selector = RenVMSelector(mintTokenSymbol: "BTC", chainName: "Solana", direction: .from)
+        let selector = Selector(mintTokenSymbol: "BTC", chainName: "Solana", direction: .from)
         let version = "1"
         
         let tx = ParamsSubmitMint(

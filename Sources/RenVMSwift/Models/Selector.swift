@@ -1,6 +1,6 @@
 import Foundation
 
-struct RenVMSelector {
+struct Selector {
     let mintTokenSymbol: String
     let chainName: String
     let direction: Direction

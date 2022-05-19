@@ -1,13 +1,6 @@
-//
-//  RenVM+State.swift
-//  SolanaSwift
-//
-//  Created by Chung Tran on 14/09/2021.
-//
-
 import Foundation
 
-public struct RenVMState {
+public struct State {
     public var gHash: Data?
     public var gPubKey: Data?
     public var sendTo: String? // PublicKey

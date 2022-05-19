@@ -1,10 +1,3 @@
-//
-//  RenVM+BurnAndRelease.swift
-//  SolanaSwift
-//
-//  Created by Chung Tran on 14/09/2021.
-//
-
 import Foundation
 import RxSwift
 import SolanaSwift
@@ -56,7 +49,7 @@ public struct BurnAndRelease {
         )
     }
     
-    public func getBurnState(burnDetails: BurnDetails) throws -> RenVMState {
+    public func getBurnState(burnDetails: BurnDetails) throws -> State {
         let txid = try chain.signatureToData(signature: burnDetails.confirmedSignature)
         let nonceBuffer = getNonceBuffer(nonce: BInt(burnDetails.nonce))
         let nHash = Hash.generateNHash(nonce: nonceBuffer.bytes, txId: txid.bytes, txIndex: 0)
@@ -84,7 +77,7 @@ public struct BurnAndRelease {
         )
             .base64urlEncodedString()
         
-        var state = RenVMState()
+        var state = State()
         state.sendTo = burnDetails.recipient
         state.txIndex = "0"
         state.amount = burnDetails.amount
@@ -97,7 +90,7 @@ public struct BurnAndRelease {
         return state
     }
     
-    public func release(state: RenVMState, details: BurnDetails) -> Single<String> {
+    public func release(state: State, details: BurnDetails) -> Single<String> {
         let selector = selector(direction: .from)
         let nonceBuffer = getNonceBuffer(nonce: BInt(details.nonce))
         
@@ -129,7 +122,7 @@ public struct BurnAndRelease {
         return data
     }
     
-    private func selector(direction: RenVMSelector.Direction) -> RenVMSelector {
+    private func selector(direction: Selector.Direction) -> Selector {
         chain.selector(mintTokenSymbol: mintTokenSymbol, direction: direction)
     }
     

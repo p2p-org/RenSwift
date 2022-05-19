@@ -11,7 +11,7 @@ import RxSwift
 import SolanaSwift
 
 public protocol RenVMRpcClientType {
-    var network: RenVMNetwork {get}
+    var network: Network {get}
     func call<T: Decodable>(endpoint: String, method: String, params: Encodable, log: Bool) -> Single<T>
     func selectPublicKey(mintTokenSymbol: String) -> Single<Data?>
 }
@@ -32,7 +32,7 @@ public extension RenVMRpcClientType {
 
     internal func submitTx(
         hash: String,
-        selector: RenVMSelector,
+        selector: Selector,
         version: String,
         input: MintTransactionInput
     ) -> Single<ResponseSubmitTxMint> {
@@ -76,11 +76,11 @@ public extension RenVMRpcClientType {
 }
 
 public struct RpcClient: RenVMRpcClientType {
-    public init(network: RenVMNetwork) {
+    public init(network: Network) {
         self.network = network
     }
     
-    public let network: RenVMNetwork
+    public let network: Network
     
     public func call<T>(endpoint: String, method: String, params: Encodable, log: Bool) -> Single<T> where T : Decodable {
         do {

@@ -38,7 +38,7 @@ struct MintTransactionInput: Encodable {
         self.amount     = amount
     }
     
-    init(state: RenVMState, nonce: Data) throws {
+    init(state: State, nonce: Data) throws {
         guard let gHash = state.gHash,
               let nHash = state.nHash,
               let amount = state.amount,
@@ -71,7 +71,7 @@ struct MintTransactionInput: Encodable {
     let to: String
     let amount: String
     
-    func hash(selector: RenVMSelector, version: String) throws -> Data {
+    func hash(selector: Selector, version: String) throws -> Data {
         var data = Data()
         data += marshal(src: version)
         data += marshal(src: selector.toString())

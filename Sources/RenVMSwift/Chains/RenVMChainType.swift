@@ -1,10 +1,3 @@
-//
-//  RenVMChainType.swift
-//  Action
-//
-//  Created by Chung Tran on 17/09/2021.
-//
-
 import Foundation
 import RxSwift
 
@@ -39,7 +32,7 @@ public protocol RenVMChainType {
 }
 
 extension RenVMChainType {
-    func selector(mintTokenSymbol: String, direction: RenVMSelector.Direction) -> RenVMSelector {
+    func selector(mintTokenSymbol: String, direction: Selector.Direction) -> Selector {
         .init(mintTokenSymbol: mintTokenSymbol, chainName: chainName, direction: direction)
     }
 }

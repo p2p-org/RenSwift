@@ -1,13 +1,6 @@
-//
-//  RenVM+Network.swift
-//  Alamofire
-//
-//  Created by Chung Tran on 09/09/2021.
-//
-
 import Foundation
 
-public struct RenVMNetwork {
+public struct Network {
     public private(set) var chain: String
     public private(set) var endpoint: String
     public private(set) var lightNode: String

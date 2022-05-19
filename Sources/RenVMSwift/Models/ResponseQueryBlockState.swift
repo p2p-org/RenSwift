@@ -1,16 +1,16 @@
 import Foundation
 
 public struct ResponseQueryBlockState: Decodable {
-    let state: RenVMState
+    let state: State
     
     func publicKey(mintTokenSymbol: String) -> String? {
-        if mintTokenSymbol == RenVMState.V.CodingKeys.btc.rawValue {
+        if mintTokenSymbol == State.V.CodingKeys.btc.rawValue {
             return state.v.btc.shards.first?.pubKey
         }
         return nil
     }
     
-    struct RenVMState: Decodable {
+    struct State: Decodable {
         let t: T
         let v: V
         struct T: Decodable {

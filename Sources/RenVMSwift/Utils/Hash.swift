@@ -14,7 +14,7 @@ struct Hash {
         Data([UInt8]().keccak256)
     }
     
-    static func generateSHash(selector: RenVMSelector) -> Data {
+    static func generateSHash(selector: Selector) -> Data {
         Data(selector.toString().keccak256)
     }
     

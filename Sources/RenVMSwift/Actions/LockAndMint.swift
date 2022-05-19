@@ -1,10 +1,3 @@
-//
-//  RenVM+LockAndMint.swift
-//  SolanaSwift
-//
-//  Created by Chung Tran on 09/09/2021.
-//
-
 import Foundation
 import RxSwift
 
@@ -21,7 +14,7 @@ public struct LockAndMint {
     private let destinationAddress: Data
     
     // MARK: - State
-    public private(set) var session: RenVMSession
+    public private(set) var session: Session
     
     // MARK: - Initializer
     /// Create LockAndMint by creating new session or restoring existing session
@@ -31,7 +24,7 @@ public struct LockAndMint {
         mintTokenSymbol: String,
         version: String,
         destinationAddress: Data,
-        session: RenVMSession? = nil
+        session: Session? = nil
     ) throws {
         self.rpcClient = rpcClient
         self.chain = chain
@@ -42,7 +35,7 @@ public struct LockAndMint {
         if let session = session {
             self.session = session
         } else {
-            self.session = try RenVMSession()
+            self.session = try Session()
         }
     }
     
@@ -83,7 +76,7 @@ public struct LockAndMint {
         sendTo to: Data,
         gHash: Data,
         gPubkey: Data
-    ) throws -> RenVMState {
+    ) throws -> State {
         let nonce = Data(hex: session.nonce)
         let txid = Data(hex: reverseHex(src: transactionHash))
         let nHash = Hash.generateNHash(nonce: nonce.bytes, txId: txid.bytes, txIndex: UInt32(txIndex) ?? 0)
@@ -105,7 +98,7 @@ public struct LockAndMint {
             .hash(selector: selector(direction: .to), version: version)
             .base64urlEncodedString()
         
-        let state = RenVMState(
+        let state = State(
             gHash: gHash,
             gPubKey: gPubkey,
             sendTo: try chain.dataToAddress(data: to),
@@ -120,7 +113,7 @@ public struct LockAndMint {
         return state
     }
     
-    public func submitMintTransaction(state: RenVMState) -> Single<String> {
+    public func submitMintTransaction(state: State) -> Single<String> {
         let selector = selector(direction: .to)
         
         // get input
@@ -145,7 +138,7 @@ public struct LockAndMint {
             .map {_ in hash}
     }
     
-    public func mint(state: RenVMState, signer: Data) -> Single<(amountOut: String?, signature: String)> {
+    public func mint(state: State, signer: Data) -> Single<(amountOut: String?, signature: String)> {
         guard let txHash = state.txHash else {
             return .error(RenVMError("txHash not found"))
         }
@@ -169,7 +162,7 @@ public struct LockAndMint {
             .map {(amountOut: amountOut, signature: $0)}
     }
     
-    private func selector(direction: RenVMSelector.Direction) -> RenVMSelector {
+    private func selector(direction: Selector.Direction) -> Selector {
         chain.selector(mintTokenSymbol: mintTokenSymbol, direction: direction)
     }
 }
