@@ -23,17 +23,17 @@ class RenVMHashTests: XCTestCase {
     }
     
     func testGenerateSHash() throws {
-        let bytes = RenVM.Hash.generateSHash(selector: .init(mintTokenSymbol: "BTC", chainName: "Solana", direction: .to)).bytes
+        let bytes = Hash.generateSHash(selector: .init(mintTokenSymbol: "BTC", chainName: "Solana", direction: .to)).bytes
         XCTAssertEqual(Base58.encode(bytes), "2XWUS8dNzaAFeDk6e6Q4dsojE3n9jncAZ9nNBpCJWEgZ")
     }
     
     func testGeneratePHash() throws {
-        let bytes = RenVM.Hash.generatePHash().bytes
+        let bytes = Hash.generatePHash().bytes
         XCTAssertEqual(Base58.encode(bytes), "EKDHSGbrGztomDfuiV4iqiZ6LschDJPsFiXjZ83f92Md")
     }
     
     func testGenerateGHash() throws {
-        let bytes = RenVM.Hash.generateGHash(
+        let bytes = Hash.generateGHash(
             to: "34cef1aee9a983b47366dddb37f5327263737f3551cf4ce30125668c41331a80",
             tokenIdentifier: "16ac6fb8b800ff9e24220479d69d38b59a077966f500c7bbd3435dad78d8fc02",
             nonce: Base58.decode("3AQTaduKvYWFTu1ExZSQK1hQp5jSZ2yEt4KzsASghu2T")
@@ -43,7 +43,7 @@ class RenVMHashTests: XCTestCase {
     }
     
     func testGenerateNHash() throws {
-        let data = RenVM.Hash.generateNHash(
+        let data = Hash.generateNHash(
             nonce: Base58.decode("3AQTaduKvYWFTu1ExZSQK1hQp5jSZ2yEt4KzsASghu3E"),
             txId: Base58.decode("3r2qaGgK1Pvj6ExUqC91QexvFyAXzWA9P3WDPwAMW8me"),
             txIndex: 0
@@ -53,7 +53,7 @@ class RenVMHashTests: XCTestCase {
     }
     
     func testHashTransactionMint() throws {
-        let mintTx = RenVM.MintTransactionInput(
+        let mintTx = MintTransactionInput(
             txid: "tNWySkdaqjoHEJddH3jlVTwLFOJikwjxlGNiLDXC2ns",
             txindex: "1",
             ghash: "ePjNFLH84OxeVjzihYVWVbFZhyFM0ZpegupiBUt76V8",
@@ -68,10 +68,10 @@ class RenVMHashTests: XCTestCase {
         
         let data = try mintTx
             .hash(selector: .init(
-                    mintTokenSymbol: RenVM.Mock.mintToken,
+                    mintTokenSymbol: Mock.mintToken,
                     chainName: "Solana",
                     direction: .to
-            ), version: RenVM.Mock.version
+            ), version: Mock.version
         )
         
         XCTAssertEqual(data.base64urlEncodedString(), "3eT3xmt8h9wW9OZVvfV-BQo5nm70c_ClEqe4zryBq54")

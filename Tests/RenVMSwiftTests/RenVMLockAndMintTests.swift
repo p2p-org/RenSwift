@@ -22,9 +22,9 @@ class RenVMLockAndMintTests: XCTestCase {
     func testGenerateGatewayAddress() throws {
         let session = try createSession(sessionDays: 18870)
         
-        let lockAndMint = try RenVM.LockAndMint(
-            rpcClient: RenVM.Mock.rpcClient,
-            chain: RenVM.Mock.solanaChain(),
+        let lockAndMint = try LockAndMint(
+            rpcClient: Mock.rpcClient,
+            chain: Mock.solanaChain(),
             mintTokenSymbol: "BTC",
             version: "1",
             destinationAddress: destinationAddress.data,
@@ -37,9 +37,9 @@ class RenVMLockAndMintTests: XCTestCase {
     func testGetDepositState() throws {
         let session = try createSession(sessionDays: 18874)
         
-        let lockAndMint = try RenVM.LockAndMint(
-            rpcClient: RenVM.Mock.rpcClient,
-            chain: RenVM.Mock.solanaChain(),
+        let lockAndMint = try LockAndMint(
+            rpcClient: Mock.rpcClient,
+            chain: Mock.solanaChain(),
             mintTokenSymbol: "BTC",
             version: "1",
             destinationAddress: destinationAddress.data,

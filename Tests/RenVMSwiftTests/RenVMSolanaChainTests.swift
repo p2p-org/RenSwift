@@ -13,19 +13,19 @@ import RxSwift
 
 class RenVMSolanaChainTests: XCTestCase {
     func testGatewayRegistryStateKey() throws {
-        let network = RenVM.Network.testnet
+        let network = Network.testnet
         
         let pubkey = try PublicKey(string: network.gatewayRegistry)
         XCTAssertEqual(pubkey, "REGrPFKQhRneFFdUV3e9UDdzqUJyS6SKj88GdXFCRd2")
         
-        let stateKey = try PublicKey.findProgramAddress(seeds: [RenVM.SolanaChain.gatewayRegistryStateKey.data(using: .utf8)!], programId: pubkey)
+        let stateKey = try PublicKey.findProgramAddress(seeds: [SolanaChain.gatewayRegistryStateKey.data(using: .utf8)!], programId: pubkey)
         XCTAssertEqual(stateKey.0, "4aMET2gUF29qk8G4Zbg2bWxLkFaTWuTYqnvQqFY16J6c")
     }
     
     func testDecodeGatewayRegistryData() throws {
-        let data = Data(base64Encoded: RenVM.Mock.mockGatewayRegistryData)!
+        let data = Data(base64Encoded: Mock.mockGatewayRegistryData)!
         var pointer = 0
-        let gatewayRegistryData = try RenVM.SolanaChain.GatewayRegistryData(buffer: data, pointer: &pointer)
+        let gatewayRegistryData = try SolanaChain.GatewayRegistryData(buffer: data, pointer: &pointer)
         
         XCTAssertTrue(gatewayRegistryData.isInitialized)
         XCTAssertEqual(gatewayRegistryData.owner, "GQy1uiRSpfkb3xxRXFuNhz7cCoa5P9NgEDAWyykMGB3J")
@@ -45,9 +45,9 @@ class RenVMSolanaChainTests: XCTestCase {
     }
     
     func testDecodeGatewayStateData() throws {
-        let data = Data(base64Encoded: RenVM.Mock.mockGatewayStateData)!
+        let data = Data(base64Encoded: Mock.mockGatewayStateData)!
         var pointer = 0
-        let gatewayRegistryData = try RenVM.SolanaChain.GatewayStateData(buffer: data, pointer: &pointer)
+        let gatewayRegistryData = try SolanaChain.GatewayStateData(buffer: data, pointer: &pointer)
         
         XCTAssertEqual(gatewayRegistryData.isInitialized, true)
         XCTAssertEqual(gatewayRegistryData.renVMAuthority.bytes.toHexString(), "44bb4ef43408072bc888afd1a5986ba0ce35cb54")
@@ -56,20 +56,20 @@ class RenVMSolanaChainTests: XCTestCase {
     }
     
     func testResolveTokenGatewayContract() throws {
-        XCTAssertEqual(try RenVM.Mock.solanaChain().resolveTokenGatewayContract(mintTokenSymbol: RenVM.Mock.mintToken), "FsEACSS3nKamRKdJBaBDpZtDXWrHR2nByahr4ReoYMBH")
+        XCTAssertEqual(try Mock.solanaChain().resolveTokenGatewayContract(mintTokenSymbol: Mock.mintToken), "FsEACSS3nKamRKdJBaBDpZtDXWrHR2nByahr4ReoYMBH")
     }
     
     func testGetSPLTokenPubkey() throws {
-        XCTAssertEqual(try RenVM.Mock.solanaChain().getSPLTokenPubkey(mintTokenSymbol: RenVM.Mock.mintToken), "FsaLodPu4VmSwXGr3gWfwANe4vKf8XSZcCh1CEeJ3jpD")
+        XCTAssertEqual(try Mock.solanaChain().getSPLTokenPubkey(mintTokenSymbol: Mock.mintToken), "FsaLodPu4VmSwXGr3gWfwANe4vKf8XSZcCh1CEeJ3jpD")
     }
     
     func testGetAssociatedTokenAccount() throws {
         let pubkey: PublicKey = "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
-        XCTAssertEqual(Base58.encode(try RenVM.Mock.solanaChain().getAssociatedTokenAddress(address: pubkey.data, mintTokenSymbol: RenVM.Mock.mintToken).bytes), "4Z9Dv58aSkG9bC8stA3aqsMNXnSbJHDQTDSeddxAD1tb")
+        XCTAssertEqual(Base58.encode(try Mock.solanaChain().getAssociatedTokenAddress(address: pubkey.data, mintTokenSymbol: Mock.mintToken).bytes), "4Z9Dv58aSkG9bC8stA3aqsMNXnSbJHDQTDSeddxAD1tb")
     }
     
     func testBuildRenVMMessage() throws {
-        let bytes = try RenVM.SolanaChain.buildRenVMMessage(
+        let bytes = try SolanaChain.buildRenVMMessage(
             pHash: Data(base64urlEncoded: "xdJGAYb3IzySfn2y3McDwOUAtlPKgic7e_rYBF2FpHA")!,
             amount: "9186",
             token: Data(Base58.decode("2XWUS8dNzaAFeDk6e6Q4dsojE3n9jncAZ9nNBpCJWEgZ")),
@@ -85,8 +85,8 @@ class RenVMSolanaChainTests: XCTestCase {
 //        let to: PublicKey = "4Z9Dv58aSkG9bC8stA3aqsMNXnSbJHDQTDSeddxAD1tb"
 //        let nHash = Data(base64urlEncoded: "L1kPFl6zMw_k_6Vc6GZksrLeT25wROFmwbREyzlv9OQ")!
 //
-//        let solanaChain = RenVM.Mock.solanaChain()
+//        let solanaChain = Mock.solanaChain()
 //
-//        try solanaChain.findMintByDepositDetail(nHash: nHash, pHash: pHash, to: to, mintTokenSymbol: RenVM.Mock.mintToken, amount: amount).toBlocking().first()
+//        try solanaChain.findMintByDepositDetail(nHash: nHash, pHash: pHash, to: to, mintTokenSymbol: Mock.mintToken, amount: amount).toBlocking().first()
 //    }
 }

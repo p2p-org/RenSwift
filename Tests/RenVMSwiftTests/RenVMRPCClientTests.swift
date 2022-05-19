@@ -12,7 +12,7 @@ import XCTest
 
 class RenVMRPCClientTests: XCTestCase {
     func testEncodeBody() throws {
-        let input = RenVM.MintTransactionInput(
+        let input = MintTransactionInput(
             txid: "YtU3AP9wspScgOI6kgDr1gp49AbS52Mio7Q8JltutDJhgGSz3qkM20Csti1PRGpsJUwYHuqeWBNY_ySoUo_CCw",
             txindex: "0",
             ghash: "Bde-qbf54lElW4RIPc6GkbBkZ0muCAiIL1CEe5rB1Y8",
@@ -39,7 +39,7 @@ class RenVMRPCClientTests: XCTestCase {
             )
         )
         
-        let body = RenVM.RpcClient.Body(
+        let body = RpcClient.Body(
             method: "ren_submitTx",
             params: .init(wrapped: ["tx": tx])
         )
@@ -48,13 +48,13 @@ class RenVMRPCClientTests: XCTestCase {
     }
     
     func testQueryBlockState() throws {
-        let rpcClient = RenVM.RpcClient(network: .testnet)
+        let rpcClient = RpcClient(network: .testnet)
         let blockState = try rpcClient.queryBlockState().toBlocking().first()
         XCTAssertNotNil(blockState)
     }
     
     func testQueryConfig() throws {
-        let rpcClient = RenVM.RpcClient(network: .testnet)
+        let rpcClient = RpcClient(network: .testnet)
         let queryConfig = try rpcClient.queryConfig().toBlocking().first()
         XCTAssertNotNil(queryConfig)
     }

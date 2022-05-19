@@ -22,8 +22,8 @@ class RenVMBurnAndReleaseTests: RestAPITests {
     
     func testBurnState() throws {
         let burnAndRelease = BurnAndRelease(
-            rpcClient: RenVM.Mock.rpcClient,
-            chain: RenVM.Mock.solanaChain(),
+            rpcClient: Mock.rpcClient,
+            chain: Mock.solanaChain(),
             mintTokenSymbol: "BTC",
             version: "1",
             burnTo: "Bitcoin"
@@ -42,9 +42,9 @@ class RenVMBurnAndReleaseTests: RestAPITests {
     }
     
     func testBurnAndRelease() throws {
-        let rpcClient = RenVM.RpcClient(network: .testnet)
+        let rpcClient = RpcClient(network: .testnet)
         
-        let solanaChain = try RenVM.SolanaChain.load(client: rpcClient, solanaClient: solanaSDK).toBlocking().first()!
+        let solanaChain = try SolanaChain.load(client: rpcClient, solanaClient: solanaSDK).toBlocking().first()!
         
         let recipient = "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt"
         
