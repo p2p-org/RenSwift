@@ -5,11 +5,19 @@ extension Array where Element == UInt8 {
     public func sha3(_ variant: SHA3.Variant) -> Self {
         SHA3(variant: variant).calculate(for: self)
     }
+    
+    public func sha256() -> Self {
+        SHA2(variant: .sha256).calculate(for: self)
+    }
 }
 
 extension Data {
     public func sha3(_ variant: SHA3.Variant) -> Self {
         Data(Array(self).sha3(variant))
+    }
+    
+    public func sha256() -> Self {
+        Data(Array(self).sha256())
     }
 }
 

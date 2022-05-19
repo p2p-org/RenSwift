@@ -25,26 +25,6 @@ import Glibc
 import ucrt
 #endif
 
-@inlinable
-func rotateLeft(_ value: UInt8, by: UInt8) -> UInt8 {
-  ((value << by) & 0xff) | (value >> (8 - by))
-}
-
-@inlinable
-func rotateLeft(_ value: UInt16, by: UInt16) -> UInt16 {
-  ((value << by) & 0xffff) | (value >> (16 - by))
-}
-
-@inlinable
-func rotateLeft(_ value: UInt32, by: UInt32) -> UInt32 {
-  ((value << by) & 0xffffffff) | (value >> (32 - by))
-}
-
-@inlinable
-func rotateLeft(_ value: UInt64, by: UInt64) -> UInt64 {
-  (value << by) | (value >> (64 - by))
-}
-
 public final class SHA3: DigestType {
   let round_constants: Array<UInt64> = [
     0x0000000000000001, 0x0000000000008082, 0x800000000000808a, 0x8000000080008000,
