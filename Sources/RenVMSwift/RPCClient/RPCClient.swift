@@ -1,26 +1,24 @@
 import Foundation
-import RxAlamofire
-import RxSwift
 import SolanaSwift
 
 public protocol RenVMRpcClientType {
     var network: Network {get}
-    func call<T: Decodable>(endpoint: String, method: String, params: Encodable, log: Bool) -> Single<T>
-    func selectPublicKey(mintTokenSymbol: String) -> Single<Data?>
+    func call<T: Decodable>(endpoint: String, method: String, params: Encodable, log: Bool) async throws -> T
+    func selectPublicKey(mintTokenSymbol: String) async throws -> Data?
 }
 
 public extension RenVMRpcClientType {
     private var emptyParams: [String: String] {[:]}
-    func queryMint(txHash: String) -> Single<ResponseQueryTxMint> {
-        call(endpoint: network.lightNode, method: "ren_queryTx", params: ["txHash": txHash], log: true)
+    func queryMint(txHash: String) async throws -> ResponseQueryTxMint {
+        try await call(endpoint: network.lightNode, method: "ren_queryTx", params: ["txHash": txHash], log: true)
     }
     
-    func queryBlockState(log: Bool = false) -> Single<ResponseQueryBlockState> {
-        call(endpoint: network.lightNode, method: "ren_queryBlockState", params: emptyParams, log: log)
+    func queryBlockState(log: Bool = false) async throws -> ResponseQueryBlockState {
+        try await call(endpoint: network.lightNode, method: "ren_queryBlockState", params: emptyParams, log: log)
     }
 
-    func queryConfig() -> Single<ResponseQueryConfig> {
-        call(endpoint: network.lightNode, method: "ren_queryConfig", params: emptyParams, log: true)
+    func queryConfig() async throws -> ResponseQueryConfig {
+        try await call(endpoint: network.lightNode, method: "ren_queryConfig", params: emptyParams, log: true)
     }
 
     internal func submitTx(
@@ -28,8 +26,8 @@ public extension RenVMRpcClientType {
         selector: Selector,
         version: String,
         input: MintTransactionInput
-    ) -> Single<ResponseSubmitTxMint> {
-        call(
+    ) async throws -> ResponseSubmitTxMint {
+        try await call(
             endpoint: network.lightNode,
             method: "ren_submitTx",
             params: ["tx": ParamsSubmitMint(
@@ -45,26 +43,23 @@ public extension RenVMRpcClientType {
         )
     }
     
-    func selectPublicKey(mintTokenSymbol: String) -> Single<Data?> {
-        queryBlockState()
-            .map {
-                Data(base64urlEncoded: $0.publicKey(mintTokenSymbol: mintTokenSymbol) ?? "")
-            }
+    func selectPublicKey(mintTokenSymbol: String) async throws -> Data? {
+        let blockState = try await queryBlockState()
+        return Data(base64urlEncoded: blockState.publicKey(mintTokenSymbol: mintTokenSymbol) ?? "")
     }
     
-    func getTransactionFee(mintTokenSymbol: String) -> Single<UInt64> {
+    func getTransactionFee(mintTokenSymbol: String) async throws -> UInt64 {
         // TODO: - Remove later: Support other tokens
         if mintTokenSymbol != "BTC" {
-            return .error(RenVMError("Unsupported token"))
+            throw RenVMError("Unsupported token")
         }
         
-        return queryBlockState(log: true)
-            .map {blockState in
-                guard let gasLimit = UInt64(blockState.state.v.btc.gasLimit),
-                      let gasCap = UInt64(blockState.state.v.btc.gasCap)
-                else {throw RenVMError("Could not calculate transaction fee")}
-                return gasLimit * gasCap
-            }
+        let blockState = try await queryBlockState(log: true)
+        
+        guard let gasLimit = UInt64(blockState.state.v.btc.gasLimit),
+              let gasCap = UInt64(blockState.state.v.btc.gasCap)
+        else {throw RenVMError("Could not calculate transaction fee")}
+        return gasLimit * gasCap
     }
 }
 
@@ -75,51 +70,38 @@ public struct RpcClient: RenVMRpcClientType {
     
     public let network: Network
     
-    public func call<T>(endpoint: String, method: String, params: Encodable, log: Bool) -> Single<T> where T : Decodable {
-        do {
-            // prepare params
-            let params = EncodableWrapper.init(wrapped:params)
-            
-            // Log
-            if log {
-                Logger.log(message: "renBTC event \(method) \(params.jsonString ?? "")", event: .request, apiMethod: method)
-            }
-            
-            // prepare urlRequest
-            let body = Body(method: method, params: params)
-            
-            var urlRequest = try URLRequest(
-                url: endpoint,
-                method: .post,
-                headers: [.contentType("application/json")]
-            )
-            urlRequest.httpBody = try JSONEncoder().encode(body)
-            
-            // request
-            return request(urlRequest)
-                .responseData()
-                .map {(response, data) -> T in
-                    // Print
-                    if log {
-//                            Logger.log(message: "renBTC event  " + method + " " + (String(data: data, encoding: .utf8) ?? ""), event: .response, apiMethod: method)
-                    }
-                    
-                    let statusCode = response.statusCode
-                    let isValidStatusCode = (200..<300).contains(statusCode)
-                    
-                    let res = try JSONDecoder().decode(Response<T>.self, from: data)
-                    
-                    if isValidStatusCode, let result = res.result {
-                        return result
-                    }
-                    
-                    throw res.error ?? .unknown
-                }
-                .take(1)
-                .asSingle()
-        } catch {
-            return .error(error)
+    public func call<T>(endpoint: String, method: String, params: Encodable, log: Bool) async throws -> T where T : Decodable {
+        // prepare params
+        let params = EncodableWrapper.init(wrapped:params)
+        
+        // Log
+        if log {
+            Logger.log(message: "renBTC event \(method) \(params.jsonString ?? "")", event: .request, apiMethod: method)
         }
+        
+        // prepare urlRequest
+        let body = Body(method: method, params: params)
+        
+        var urlRequest = try URLRequest(
+            url: endpoint,
+            method: .post,
+            headers: [.contentType("application/json")]
+        )
+        urlRequest.httpBody = try JSONEncoder().encode(body)
+        
+        // request
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+        let isValidStatusCode = (200..<300).contains(statusCode)
+        
+        let res = try JSONDecoder().decode(Response<T>.self, from: data)
+        
+        if isValidStatusCode, let result = res.result {
+            return result
+        }
+        
+        throw res.error ?? .unknown
     }
     
     struct Body: Encodable {
@@ -151,4 +133,39 @@ extension Encodable {
         guard let data = try? JSONEncoder().encode(self) else {return nil}
         return String(data: data, encoding: .utf8)
     }
+}
+
+@available(iOS, deprecated: 15.0, message: "Use the built-in API instead")
+@available(macOS, deprecated: 12.0, message: "Use the built-in API instead")
+extension URLSession {
+    func data(for url: URL) async throws -> (Data, URLResponse) {
+        try await withCheckedThrowingContinuation { continuation in
+            let task = self.dataTask(with: url) { data, response, error in
+                guard let data = data, let response = response else {
+                    let error = error ?? URLError(.badServerResponse)
+                    return continuation.resume(throwing: error)
+                }
+
+                continuation.resume(returning: (data, response))
+            }
+
+            task.resume()
+        }
+    }
+    
+    func data(for urlRequest: URLRequest) async throws -> (Data, URLResponse) {
+        try await withCheckedThrowingContinuation { continuation in
+            let task = self.dataTask(with: urlRequest) { data, response, error in
+                guard let data = data, let response = response else {
+                    let error = error ?? URLError(.badServerResponse)
+                    return continuation.resume(throwing: error)
+                }
+
+                continuation.resume(returning: (data, response))
+            }
+
+            task.resume()
+        }
+    }
+
 }

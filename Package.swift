@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "RenVMSwift",
     platforms: [
-        .macOS(.v10_12),
-        .iOS(.v10),
+        .macOS(.v10_15),
+        .iOS(.v13),
         .tvOS(.v10),
         .watchOS(.v3)
     ],
@@ -19,8 +19,6 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ReactiveX/RxSwift.git", from: "6.2.0"),
-        .package(url: "https://github.com/RxSwiftCommunity/RxAlamofire.git",
-                             from: "6.1.1"),
         .package(url: "https://github.com/p2p-org/solana-swift.git", from: "1.3.5")
     ],
     targets: [
@@ -29,7 +27,6 @@ let package = Package(
         .target(
             name: "RenVMSwift",
             dependencies: [
-                "RxAlamofire",
                 .product(name: "SolanaSwift", package: "solana-swift")
             ]
         ),
