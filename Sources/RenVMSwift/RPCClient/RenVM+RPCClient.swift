@@ -76,11 +76,11 @@ public extension RenVMRpcClientType {
 }
 
 public struct RpcClient: RenVMRpcClientType {
-    public init(network: RenVM.Network) {
+    public init(network: RenVMNetwork) {
         self.network = network
     }
     
-    public let network: RenVM.Network
+    public let network: RenVMNetwork
     
     public func call<T>(endpoint: String, method: String, params: Encodable, log: Bool) -> Single<T> where T : Decodable {
         do {
