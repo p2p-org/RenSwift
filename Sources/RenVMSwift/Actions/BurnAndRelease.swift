@@ -39,7 +39,7 @@ public struct BurnAndRelease {
         recipient: String,
         signer: Data
     ) async throws -> BurnDetails {
-        return chain.submitBurn(
+        try await chain.submitBurn(
             mintTokenSymbol: mintTokenSymbol,
             account: account,
             amount: amount,
@@ -94,25 +94,19 @@ public struct BurnAndRelease {
         let nonceBuffer = getNonceBuffer(nonce: BInt(details.nonce))
         
         // get input
-        let mintTx: MintTransactionInput
-        let hash: String
-        do {
-            mintTx = try MintTransactionInput(state: state, nonce: nonceBuffer)
-            hash = try mintTx
-                .hash(selector: selector, version: version)
-                .base64urlEncodedString()
-        } catch {
-            return .error(error)
-        }
+        let mintTx = try MintTransactionInput(state: state, nonce: nonceBuffer)
+        let hash = try mintTx
+            .hash(selector: selector, version: version)
+            .base64urlEncodedString()
         
         // send transaction
-        return rpcClient.submitTx(
+        _ = try await rpcClient.submitTx(
             hash: hash,
             selector: selector,
             version: version,
             input: mintTx
         )
-            .map {_ in hash}
+        return hash
     }
     
     private func getNonceBuffer(nonce: BInt) -> Data {
