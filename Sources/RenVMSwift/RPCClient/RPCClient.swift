@@ -1,5 +1,5 @@
 import Foundation
-import SolanaSwift
+import LoggerSwift
 
 public protocol RenVMRpcClientType {
     var network: Network {get}
@@ -71,23 +71,25 @@ public struct RpcClient: RenVMRpcClientType {
     public let network: Network
     
     public func call<T>(endpoint: String, method: String, params: Encodable, log: Bool) async throws -> T where T : Decodable {
+        guard let endpoint = URL(string: endpoint) else {
+            throw RenVMError.invalidEndpoint
+        }
+        
         // prepare params
         let params = EncodableWrapper.init(wrapped:params)
         
         // Log
         if log {
-            Logger.log(message: "renBTC event \(method) \(params.jsonString ?? "")", event: .request, apiMethod: method)
+            Logger.log(event: .request, message: "renBTC event \(method) \(params.jsonString ?? "")")
         }
         
         // prepare urlRequest
         let body = Body(method: method, params: params)
         
-        var urlRequest = try URLRequest(
-            url: endpoint,
-            method: .post,
-            headers: [.contentType("application/json")]
-        )
+        var urlRequest = URLRequest(url: endpoint)
         urlRequest.httpBody = try JSONEncoder().encode(body)
+        urlRequest.httpMethod = "POST"
+        urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
         // request
         let (data, response) = try await URLSession.shared.data(for: urlRequest)

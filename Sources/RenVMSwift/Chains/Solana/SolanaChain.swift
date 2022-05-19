@@ -261,15 +261,19 @@ public struct SolanaChain: RenVMChainType {
         let renVMMessage = try Self.buildRenVMMessage(pHash: pHash, amount: amount, token: sHash, to: to, nHash: nHash)
         
         let mintLogAccount = try PublicKey.findProgramAddress(seeds: [renVMMessage.keccak256], programId: program).0
-        return apiClient.getMintData(mintAddress: mintLogAccount.base58EncodedString, programId: program.base58EncodedString)
-            .flatMap {mint -> Single<String> in
-                if !mint.isInitialized {return .just("")}
-                return solanaClient.getConfirmedSignaturesForAddress2(
-                    account: mintLogAccount.base58EncodedString,
-                    configs: nil
-                )
-                    .map {$0.first?.signature ?? ""}
-            }
+        let bufferInfo: BufferInfo<Mint>? = try await apiClient.getAccountInfo(account: mintLogAccount.base58EncodedString)
+        guard let mint = bufferInfo?.data else {
+            throw RenVMError("Invalid mint info")
+        }
+        
+        if !mint.isInitialized {return ""}
+        
+        let signatures = try await apiClient.getSignaturesForAddress(
+            address: mintLogAccount.base58EncodedString,
+            configs: nil
+        )
+        
+        return signatures.first?.signature ?? ""
     }
     
     // MARK: - Static methods

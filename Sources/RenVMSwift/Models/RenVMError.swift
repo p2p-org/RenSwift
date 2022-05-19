@@ -16,4 +16,8 @@ public struct RenVMError: Swift.Error, Equatable, Decodable {
     public static var paramsMissing: Self {
         .init("One or some parameters are missing")
     }
+    
+    public static var invalidEndpoint: Self {
+        .init("Invalid endpoint")
+    }
 }
