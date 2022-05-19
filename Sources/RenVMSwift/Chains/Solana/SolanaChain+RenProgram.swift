@@ -29,10 +29,10 @@ extension SolanaChain {
                     .init(publicKey: recipientTokenAccount, isSigner: false, isWritable: true),
                     .init(publicKey: mintLogAccount, isSigner: false, isWritable: true),
                     .init(publicKey: mintAuthority, isSigner: false, isWritable: false),
-                    .init(publicKey: .programId, isSigner: false, isWritable: false),
+                    .init(publicKey: SystemProgram.id, isSigner: false, isWritable: false),
                     .init(publicKey: .sysvarInstruction, isSigner: false, isWritable: false),
                     .init(publicKey: .sysvarRent, isSigner: false, isWritable: false),
-                    .init(publicKey: .tokenProgramId, isSigner: false, isWritable: false)
+                    .init(publicKey: TokenProgram.id, isSigner: false, isWritable: false)
                 ],
                 programId: programId,
                 data: [UInt8(1)]
@@ -85,7 +85,7 @@ extension SolanaChain {
                     .init(publicKey: gatewayAccount, isSigner: false, isWritable: true),
                     .init(publicKey: tokenMint, isSigner: false, isWritable: true),
                     .init(publicKey: burnLogAccountId, isSigner: false, isWritable: true),
-                    .init(publicKey: .programId, isSigner: false, isWritable: false),
+                    .init(publicKey: SystemProgram.id, isSigner: false, isWritable: false),
                     .init(publicKey: .sysvarInstruction, isSigner: false, isWritable: false),
                     .init(publicKey: .sysvarRent, isSigner: false, isWritable: false),
                 ],

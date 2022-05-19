@@ -10,19 +10,21 @@ public struct SolanaChain: RenVMChainType {
     // MARK: - Properties
     let gatewayRegistryData: GatewayRegistryData
     let client: RenVMRpcClientType
-    let solanaClient: SolanaAPIClient
+    let apiClient: SolanaAPIClient
+    let blockchainClient: SolanaBlockchainClient
     
     // MARK: - Methods
     public static func load(
         client: RenVMRpcClientType,
-        solanaClient: SolanaAPIClient
+        solanaClient: SolanaAPIClient,
+        blockchainClient: SolanaBlockchainClient
     ) async throws -> Self {
         let pubkey = try PublicKey(string: client.network.gatewayRegistry)
         let stateKey = try PublicKey.findProgramAddress(
             seeds: [Self.gatewayRegistryStateKey.data(using: .utf8)!],
             programId: pubkey
         )
-        let result: BufferInfo<GatewayRegistryData>? = solanaClient.getAccountInfo(
+        let result: BufferInfo<GatewayRegistryData>? = try await solanaClient.getAccountInfo(
             account: stateKey.0.base58EncodedString
         )
         
@@ -30,7 +32,7 @@ public struct SolanaChain: RenVMChainType {
             throw SolanaError.couldNotRetrieveAccountInfo
         }
         
-        return .init(gatewayRegistryData: data, client: client, solanaClient: solanaClient)
+        return .init(gatewayRegistryData: data, client: client, apiClient: solanaClient, blockchainClient: blockchainClient)
     }
     
     func resolveTokenGatewayContract(mintTokenSymbol: String) throws -> PublicKey {
@@ -80,16 +82,22 @@ public struct SolanaChain: RenVMChainType {
         signer: Account
     ) async throws -> String {
         let tokenMint = try getSPLTokenPubkey(mintTokenSymbol: mintTokenSymbol)
-        let createAccountInstruction = try AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
-            mint: tokenMint,
-            owner: address,
-            payer: signer.publicKey
-        )
-        return solanaClient.serializeAndSend(
+        let createAccountInstruction = try AssociatedTokenProgram
+            .createAssociatedTokenAccountInstruction(
+                mint: tokenMint,
+                owner: address,
+                payer: signer.publicKey
+            )
+        
+        let preparedTransaction = try await blockchainClient.prepareTransaction(
             instructions: [createAccountInstruction],
-            recentBlockhash: nil,
             signers: [signer],
-            isSimulation: false
+            feePayer: signer.publicKey,
+            feeCalculator: nil
+        )
+        
+        return try await blockchainClient.sendTransaction(
+            preparedTransaction: preparedTransaction
         )
     }
     
@@ -323,7 +331,7 @@ extension SolanaChain {
         }
     }
     
-    struct GatewayRegistryData: DecodableBufferLayout {
+    struct GatewayRegistryData: BufferLayout {
         let isInitialized: Bool
         let owner: PublicKey
         let count: UInt64
