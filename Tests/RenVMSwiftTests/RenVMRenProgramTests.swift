@@ -25,7 +25,7 @@ class RenVMRenProgramTests: XCTestCase {
     }
     
     func testBurnInstruction() throws {
-        let publicKey: SolanaSDK.PublicKey = "11111111111111111111111111111111"
+        let publicKey: PublicKey = "11111111111111111111111111111111"
         let recipient = "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt".bytes
         let instruction = RenVM.SolanaChain.RenProgram.burnInstruction(
             account: publicKey,

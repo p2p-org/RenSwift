@@ -1,5 +1,4 @@
 import Foundation
-import RxSwift
 
 public protocol RenVMChainType {
     var chainName: String {get}
@@ -20,7 +19,7 @@ public protocol RenVMChainType {
         mintTokenSymbol: String,
         signer: Data,
         responceQueryMint: ResponseQueryTxMint
-    ) -> Single<String>
+    ) async throws -> String
     
     func submitBurn(
         mintTokenSymbol: String,
@@ -28,7 +27,7 @@ public protocol RenVMChainType {
         amount: String,
         recipient: String,
         signer: Data
-    ) -> Single<BurnAndRelease.BurnDetails>
+    ) async throws -> BurnAndRelease.BurnDetails
 }
 
 extension RenVMChainType {

@@ -12,7 +12,7 @@ import XCTest
 @testable import RenVMSwift
 
 class RenVMBurnAndReleaseTests: RestAPITests {
-    override var endpoint: SolanaSDK.APIEndPoint {
+    override var endpoint: APIEndPoint {
         .init(address: "https://api.devnet.solana.com", network: .devnet)
     }
     

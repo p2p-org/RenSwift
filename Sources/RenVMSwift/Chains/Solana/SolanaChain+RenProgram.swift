@@ -1,9 +1,9 @@
 import Foundation
 import SolanaSwift
 
-private extension SolanaSDK.PublicKey {
-    static let sysvarInstruction: SolanaSDK.PublicKey = "Sysvar1nstructions1111111111111111111111111"
-    static let secp256k1ProgramId: SolanaSDK.PublicKey = "KeccakSecp256k11111111111111111111111111111"
+private extension PublicKey {
+    static let sysvarInstruction: PublicKey = "Sysvar1nstructions1111111111111111111111111"
+    static let secp256k1ProgramId: PublicKey = "KeccakSecp256k11111111111111111111111111111"
 }
 
 extension SolanaChain {
@@ -13,14 +13,14 @@ extension SolanaChain {
         static let SECP256K1_INSTRUCTION_SIZE = 98
         
         public static func mintInstruction(
-            account: SolanaSDK.PublicKey,
-            gatewayAccount: SolanaSDK.PublicKey,
-            tokenMint: SolanaSDK.PublicKey,
-            recipientTokenAccount: SolanaSDK.PublicKey,
-            mintLogAccount: SolanaSDK.PublicKey,
-            mintAuthority: SolanaSDK.PublicKey,
-            programId: SolanaSDK.PublicKey
-        ) -> SolanaSDK.TransactionInstruction {
+            account: PublicKey,
+            gatewayAccount: PublicKey,
+            tokenMint: PublicKey,
+            recipientTokenAccount: PublicKey,
+            mintLogAccount: PublicKey,
+            mintAuthority: PublicKey,
+            programId: PublicKey
+        ) -> TransactionInstruction {
             .init(
                 keys: [
                     .init(publicKey: account, isSigner: true, isWritable: false),
@@ -44,7 +44,7 @@ extension SolanaChain {
             message: Data,
             signature: Data,
             recoveryId: UInt8
-        ) -> SolanaSDK.TransactionInstruction {
+        ) -> TransactionInstruction {
             let dataStart = 1 + SIGNATURE_OFFSETS_SERIALIZED_SIZE
             let ethAddressOffset = dataStart + 1
             let signatureOffset = ethAddressOffset + ETHEREUM_ADDRESS_BYTES
@@ -70,14 +70,14 @@ extension SolanaChain {
         }
         
         public static func burnInstruction(
-            account: SolanaSDK.PublicKey,
-            source: SolanaSDK.PublicKey,
-            gatewayAccount: SolanaSDK.PublicKey,
-            tokenMint: SolanaSDK.PublicKey,
-            burnLogAccountId: SolanaSDK.PublicKey,
+            account: PublicKey,
+            source: PublicKey,
+            gatewayAccount: PublicKey,
+            tokenMint: PublicKey,
+            burnLogAccountId: PublicKey,
             recipient: Data,
-            programId: SolanaSDK.PublicKey
-        ) -> SolanaSDK.TransactionInstruction {
+            programId: PublicKey
+        ) -> TransactionInstruction {
             .init(
                 keys: [
                     .init(publicKey: account, isSigner: true, isWritable: false),

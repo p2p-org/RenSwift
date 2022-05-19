@@ -11,7 +11,7 @@ import XCTest
 @testable import RenVMSwift
 
 class RenVMLockAndMintTests: XCTestCase {
-    let destinationAddress: SolanaSDK.PublicKey = "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
+    let destinationAddress: PublicKey = "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
     
     func testSession() throws {
         let session = try createSession(sessionDays: 18870)

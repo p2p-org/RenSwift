@@ -43,7 +43,7 @@ extension RenVM {
                 .empty()
             }
             
-            func getAccountInfo<T>(account: String, decodedTo: T.Type) -> Single<SolanaSDK.BufferInfo<T>> where T : DecodableBufferLayout {
+            func getAccountInfo<T>(account: String, decodedTo: T.Type) -> Single<BufferInfo<T>> where T : DecodableBufferLayout {
                 if decodedTo == RenVM.SolanaChain.GatewayRegistryData.self {
                     let data = Data(base64Encoded: RenVM.Mock.mockGatewayRegistryData)!
                     var pointer = 0
@@ -53,15 +53,15 @@ extension RenVM {
                 fatalError()
             }
             
-            func getMintData(mintAddress: String, programId: String) -> Single<SolanaSDK.Mint> {
+            func getMintData(mintAddress: String, programId: String) -> Single<Mint> {
                 fatalError()
             }
             
-            func getConfirmedSignaturesForAddress2(account: String, configs: SolanaSDK.RequestConfiguration?) -> Single<[SolanaSDK.SignatureInfo]> {
+            func getConfirmedSignaturesForAddress2(account: String, configs: RequestConfiguration?) -> Single<[SignatureInfo]> {
                 fatalError()
             }
             
-            func serializeAndSend(instructions: [SolanaSDK.TransactionInstruction], recentBlockhash: String?, signers: [SolanaSDK.Account], isSimulation: Bool) -> Single<String> {
+            func serializeAndSend(instructions: [TransactionInstruction], recentBlockhash: String?, signers: [Account], isSimulation: Bool) -> Single<String> {
                 fatalError()
             }
         }

@@ -9,14 +9,14 @@ import XCTest
 import SolanaSwift
 
 class RestAPITests: XCTestCase {
-    var endpoint: SolanaSDK.APIEndPoint {
+    var endpoint: APIEndPoint {
         .init(
             address: "https://api.mainnet-beta.solana.com",
             network: .mainnetBeta
         )
     }
     var solanaSDK: SolanaSDK!
-    var account: SolanaSDK.Account {solanaSDK.accountStorage.account!}
+    var account: Account {solanaSDK.accountStorage.account!}
     
     var overridingAccount: String? {
         nil
@@ -25,12 +25,12 @@ class RestAPITests: XCTestCase {
     override func setUpWithError() throws {
         let accountStorage = InMemoryAccountStorage()
         solanaSDK = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
-        let account = try SolanaSDK.Account(phrase: (overridingAccount ?? endpoint.network.testAccount).components(separatedBy: " "), network: endpoint.network)
+        let account = try Account(phrase: (overridingAccount ?? endpoint.network.testAccount).components(separatedBy: " "), network: endpoint.network)
         try accountStorage.save(account)
     }
 }
 
-extension SolanaSDK.Network {
+extension Network {
     var testAccount: String {
         switch self {
         case .mainnetBeta:
@@ -44,11 +44,11 @@ extension SolanaSDK.Network {
 }
 
 class InMemoryAccountStorage: SolanaSDKAccountStorage {
-    private var _account: SolanaSDK.Account?
-    func save(_ account: SolanaSDK.Account) throws {
+    private var _account: Account?
+    func save(_ account: Account) throws {
         _account = account
     }
-    var account: SolanaSDK.Account? {
+    var account: Account? {
         _account
     }
     func clear() {

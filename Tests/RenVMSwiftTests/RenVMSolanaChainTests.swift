@@ -15,10 +15,10 @@ class RenVMSolanaChainTests: XCTestCase {
     func testGatewayRegistryStateKey() throws {
         let network = RenVM.Network.testnet
         
-        let pubkey = try SolanaSDK.PublicKey(string: network.gatewayRegistry)
+        let pubkey = try PublicKey(string: network.gatewayRegistry)
         XCTAssertEqual(pubkey, "REGrPFKQhRneFFdUV3e9UDdzqUJyS6SKj88GdXFCRd2")
         
-        let stateKey = try SolanaSDK.PublicKey.findProgramAddress(seeds: [RenVM.SolanaChain.gatewayRegistryStateKey.data(using: .utf8)!], programId: pubkey)
+        let stateKey = try PublicKey.findProgramAddress(seeds: [RenVM.SolanaChain.gatewayRegistryStateKey.data(using: .utf8)!], programId: pubkey)
         XCTAssertEqual(stateKey.0, "4aMET2gUF29qk8G4Zbg2bWxLkFaTWuTYqnvQqFY16J6c")
     }
     
@@ -64,7 +64,7 @@ class RenVMSolanaChainTests: XCTestCase {
     }
     
     func testGetAssociatedTokenAccount() throws {
-        let pubkey: SolanaSDK.PublicKey = "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
+        let pubkey: PublicKey = "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
         XCTAssertEqual(Base58.encode(try RenVM.Mock.solanaChain().getAssociatedTokenAddress(address: pubkey.data, mintTokenSymbol: RenVM.Mock.mintToken).bytes), "4Z9Dv58aSkG9bC8stA3aqsMNXnSbJHDQTDSeddxAD1tb")
     }
     
@@ -82,7 +82,7 @@ class RenVMSolanaChainTests: XCTestCase {
 //    func testFindMintByDepositDetails() throws {
 //        let pHash = Data(base64urlEncoded: "xdJGAYb3IzySfn2y3McDwOUAtlPKgic7e_rYBF2FpHA")!
 //        let amount = "9186"
-//        let to: SolanaSDK.PublicKey = "4Z9Dv58aSkG9bC8stA3aqsMNXnSbJHDQTDSeddxAD1tb"
+//        let to: PublicKey = "4Z9Dv58aSkG9bC8stA3aqsMNXnSbJHDQTDSeddxAD1tb"
 //        let nHash = Data(base64urlEncoded: "L1kPFl6zMw_k_6Vc6GZksrLeT25wROFmwbREyzlv9OQ")!
 //
 //        let solanaChain = RenVM.Mock.solanaChain()

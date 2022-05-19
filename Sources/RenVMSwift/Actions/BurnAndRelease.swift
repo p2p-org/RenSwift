@@ -1,5 +1,4 @@
 import Foundation
-import RxSwift
 import SolanaSwift
 
 extension BurnAndRelease {
@@ -39,7 +38,7 @@ public struct BurnAndRelease {
         amount: String,
         recipient: String,
         signer: Data
-    ) -> Single<BurnDetails> {
+    ) async throws -> BurnDetails {
         return chain.submitBurn(
             mintTokenSymbol: mintTokenSymbol,
             account: account,
@@ -90,7 +89,7 @@ public struct BurnAndRelease {
         return state
     }
     
-    public func release(state: State, details: BurnDetails) -> Single<String> {
+    public func release(state: State, details: BurnDetails) async throws -> String {
         let selector = selector(direction: .from)
         let nonceBuffer = getNonceBuffer(nonce: BInt(details.nonce))
         
