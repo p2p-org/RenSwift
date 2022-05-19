@@ -152,29 +152,33 @@ public struct SolanaChain: RenVMChainType {
             programId: program
         )
         
-        let requestGatewayInfo = solanaClient.getAccountInfo(
-            account: gatewayAccountId.base58EncodedString,
-            decodedTo: GatewayStateData.self
-        ).map {$0.data}
+        let response: BufferInfo<GatewayStateData>? = try await apiClient.getAccountInfo(
+            account: gatewayAccountId.base58EncodedString
+        )
         
-        return requestGatewayInfo
-            .flatMap {gatewayState in
-                let secpInstruction = RenProgram.createInstructionWithEthAddress2(
-                    ethAddress: Data(gatewayState.renVMAuthority.bytes),
-                    message: renVMMessage,
-                    signature: sig[0..<64],
-                    recoveryId: sig[64] - 27
-                )
-                return self.solanaClient.serializeAndSend(
-                    instructions: [
-                        mintInstruction,
-                        secpInstruction
-                    ],
-                    recentBlockhash: nil,
-                    signers: [signer],
-                    isSimulation: false
-                )
-            }
+        guard let gatewayState = response?.data else {
+            throw SolanaError.couldNotRetrieveAccountInfo
+        }
+        
+        let secpInstruction = RenProgram.createInstructionWithEthAddress2(
+            ethAddress: Data(gatewayState.renVMAuthority.bytes),
+            message: renVMMessage,
+            signature: sig[0..<64],
+            recoveryId: sig[64] - 27
+        )
+        
+        let preparedTransaction = try await blockchainClient.prepareTransaction(
+            instructions: [
+                mintInstruction,
+                secpInstruction
+            ],
+            signers: [signer],
+            feePayer: signer.publicKey,
+            feeCalculator: nil
+        )
+        return try await blockchainClient.sendTransaction(
+            preparedTransaction: preparedTransaction
+        )
     }
     
     public func submitBurn(
@@ -194,50 +198,53 @@ public struct SolanaChain: RenVMChainType {
         let source = try PublicKey(data: try getAssociatedTokenAddress(address: account.data, mintTokenSymbol: mintTokenSymbol))
         let gatewayAccountId = try PublicKey.findProgramAddress(seeds: [Data(gatewayStateKey.bytes)], programId: program).0
         
-        return solanaClient.getAccountInfo(
-            account: gatewayAccountId.base58EncodedString,
-            decodedTo: GatewayStateData.self
+        let response: BufferInfo<GatewayStateData>? = try await apiClient.getAccountInfo(
+            account: gatewayAccountId.base58EncodedString
         )
-            .map {$0.data}
-            .flatMap {gatewayState -> Single<BurnAndRelease.BurnDetails> in
-                let nonce = gatewayState.burnCount + 1
-                let burnLogAccountId = try PublicKey.findProgramAddress(
-                    seeds: [Data(nonce.bytes)],
-                    programId: program
-                ).0
-                
-                let burnCheckedInstruction = TokenProgram.burnCheckedInstruction(
-                    tokenProgramId: .tokenProgramId,
-                    mint: tokenMint,
-                    account: source,
-                    owner: account,
-                    amount: amount,
-                    decimals: 8
-                )
-                
-                let burnInstruction = RenProgram.burnInstruction(
-                    account: account,
-                    source: source,
-                    gatewayAccount: gatewayAccountId,
-                    tokenMint: tokenMint,
-                    burnLogAccountId: burnLogAccountId,
-                    recipient: Data(recipient.bytes),
-                    programId: program
-                )
-                
-                return self.solanaClient.serializeAndSend(
-                    instructions: [
-                        burnCheckedInstruction,
-                        burnInstruction
-                    ],
-                    recentBlockhash: nil,
-                    signers: [signer],
-                    isSimulation: false
-                )
-                .map {signature in
-                    .init(confirmedSignature: signature, nonce: nonce, recipient: recipient, amount: amountString)
-                }
-            }
+        
+        guard let gatewayState = response?.data else {
+            throw SolanaError.couldNotRetrieveAccountInfo
+        }
+        
+        let nonce = gatewayState.burnCount + 1
+        let burnLogAccountId = try PublicKey.findProgramAddress(
+            seeds: [Data(nonce.bytes)],
+            programId: program
+        ).0
+        
+        let burnCheckedInstruction = TokenProgram.burnCheckedInstruction(
+            mint: tokenMint,
+            account: source,
+            owner: account,
+            amount: amount,
+            decimals: 8
+        )
+        
+        let burnInstruction = RenProgram.burnInstruction(
+            account: account,
+            source: source,
+            gatewayAccount: gatewayAccountId,
+            tokenMint: tokenMint,
+            burnLogAccountId: burnLogAccountId,
+            recipient: Data(recipient.bytes),
+            programId: program
+        )
+        
+        let preparedTransaction = try await blockchainClient.prepareTransaction(
+            instructions: [
+                burnCheckedInstruction,
+                burnInstruction
+            ],
+            signers: [signer],
+            feePayer: signer.publicKey,
+            feeCalculator: nil
+        )
+        
+        let signature = try await blockchainClient.sendTransaction(
+            preparedTransaction: preparedTransaction
+        )
+        
+        return .init(confirmedSignature: signature, nonce: nonce, recipient: recipient, amount: amountString)
     }
     
     public func findMintByDepositDetail(
@@ -254,7 +261,7 @@ public struct SolanaChain: RenVMChainType {
         let renVMMessage = try Self.buildRenVMMessage(pHash: pHash, amount: amount, token: sHash, to: to, nHash: nHash)
         
         let mintLogAccount = try PublicKey.findProgramAddress(seeds: [renVMMessage.keccak256], programId: program).0
-        return solanaClient.getMintData(mintAddress: mintLogAccount.base58EncodedString, programId: program.base58EncodedString)
+        return apiClient.getMintData(mintAddress: mintLogAccount.base58EncodedString, programId: program.base58EncodedString)
             .flatMap {mint -> Single<String> in
                 if !mint.isInitialized {return .just("")}
                 return solanaClient.getConfirmedSignaturesForAddress2(
@@ -294,7 +301,7 @@ public struct SolanaChain: RenVMChainType {
 }
 
 extension SolanaChain {
-    struct GatewayStateData: DecodableBufferLayout {
+    struct GatewayStateData: BufferLayout {
         let isInitialized: Bool
         let renVMAuthority: SolanaChain.GatewayStateData.RenVMAuthority
         let selectors: SolanaChain.GatewayStateData.Selectors
