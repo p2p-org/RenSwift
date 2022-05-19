@@ -1,16 +1,8 @@
-//
-//  RenVMLockAndMintTests.swift
-//  SolanaSwift_Tests
-//
-//  Created by Chung Tran on 09/09/2021.
-//  Copyright © 2021 CocoaPods. All rights reserved.
-//
-
 import XCTest
 @testable import SolanaSwift
 @testable import RenVMSwift
 
-class RenVMLockAndMintTests: XCTestCase {
+class LockAndMintTests: XCTestCase {
     let destinationAddress: PublicKey = "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
     
     func testSession() throws {

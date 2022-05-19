@@ -29,8 +29,14 @@ let package = Package(
                 .product(name: "SolanaSwift", package: "solana-swift")
             ]
         ),
+        
         .testTarget(
-            name: "RenVMSwiftTests",
-            dependencies: ["RenVMSwift"]),
+            name: "UnitTests",
+            dependencies: ["RenVMSwift"]
+        ),
+        .testTarget(
+            name: "IntegrationTests",
+            dependencies: ["RenVMSwift"]
+        ),
     ]
 )

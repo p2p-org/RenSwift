@@ -1,17 +1,9 @@
-//
-//  RenVMRenProgramTests.swift
-//  SolanaSwift_Tests
-//
-//  Created by Chung Tran on 13/09/2021.
-//  Copyright © 2021 CocoaPods. All rights reserved.
-//
-
 import Foundation
 import XCTest
 @testable import SolanaSwift
 @testable import RenVMSwift
 
-class RenVMRenProgramTests: XCTestCase {
+class SolanaRenProgramTests: XCTestCase {
     func testCreateInstructionWithEthAddress2() throws {
         let ethAddress = Base58.decode("xYC479LDEE556R1CtbXsoZStA9y")
         let message = Base58

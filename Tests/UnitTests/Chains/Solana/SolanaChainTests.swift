@@ -10,7 +10,7 @@ import XCTest
 @testable import SolanaSwift
 @testable import RenVMSwift
 
-class RenVMSolanaChainTests: XCTestCase {
+class SolanaChainTests: XCTestCase {
     func testGatewayRegistryStateKey() throws {
         let network = RenVMSwift.Network.testnet
         

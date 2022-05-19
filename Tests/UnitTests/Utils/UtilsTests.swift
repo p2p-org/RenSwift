@@ -1,16 +1,8 @@
-//
-//  RenVMUtilsTests.swift
-//  SolanaSwift_Tests
-//
-//  Created by Chung Tran on 14/09/2021.
-//  Copyright © 2021 CocoaPods. All rights reserved.
-//
-
 import XCTest
 @testable import SolanaSwift
 @testable import RenVMSwift
 
-class RenVMUtilsTests: XCTestCase {
+class UtilsTests: XCTestCase {
 
     func testFixSignatureSimple() throws {
         let string = "fypvW39VUS6tB8basjmi3YsSn_GR7uLTw_lGcJhQYFcRVemsA1LkF8FQKH_1XJR-bQGP6AXsPbnmB1H8AvKBWgA"

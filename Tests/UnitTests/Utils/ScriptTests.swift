@@ -1,17 +1,9 @@
-//
-//  RenVMScriptTests.swift
-//  SolanaSwift_Tests
-//
-//  Created by Chung Tran on 10/09/2021.
-//  Copyright © 2021 CocoaPods. All rights reserved.
-//
-
 import Foundation
 import XCTest
 @testable import SolanaSwift
 @testable import RenVMSwift
 
-class RenVMScriptTests: XCTestCase {
+class ScriptTests: XCTestCase {
     func testGatewayScript() throws {
         let gGubKeyHash = Base58.decode("3ou4DtLwVsvkX76Ay3q5H4ccKQdw")
         let gHash = Base58.decode("2zB96eXCpNt4oHXqxeHjRyphdWaGYz1attyyjcSoqpV1")

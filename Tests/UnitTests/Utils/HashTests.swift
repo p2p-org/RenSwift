@@ -1,17 +1,9 @@
-//
-//  RenVMHashTests.swift
-//  SolanaSwift_Tests
-//
-//  Created by Chung Tran on 10/09/2021.
-//  Copyright © 2021 CocoaPods. All rights reserved.
-//
-
 import Foundation
 import XCTest
 @testable import SolanaSwift
 @testable import RenVMSwift
 
-class RenVMHashTests: XCTestCase {
+class HashTests: XCTestCase {
     func testSha256() throws {
         let data = Base58.decode("D4Rioa1Zh1jMummwpqx8m2SkhSATN").sha256()
         XCTAssertEqual(Base58.encode(data), "73hrfBgvit4TbtXpZuFe2exKDqWs5h2DFZ6keiiQizyc")
