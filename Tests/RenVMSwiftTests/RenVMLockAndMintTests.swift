@@ -19,33 +19,33 @@ class RenVMLockAndMintTests: XCTestCase {
         XCTAssertEqual(session.nonce, "2020202020202020202020202020202020202020202020202020202034396236")
     }
     
-    func testGenerateGatewayAddress() throws {
+    func testGenerateGatewayAddress() async throws {
         let session = try createSession(sessionDays: 18870)
         
         let lockAndMint = try LockAndMint(
             rpcClient: Mock.rpcClient,
-            chain: Mock.solanaChain(),
+            chain: try await Mock.solanaChain(),
             mintTokenSymbol: "BTC",
             version: "1",
             destinationAddress: destinationAddress.data,
             session: session
         )
-        let response = try lockAndMint.generateGatewayAddress().toBlocking().first()
-        XCTAssertEqual(Base58.encode(response!.gatewayAddress.bytes), "2NC451uvR7AD5hvWNLQiYoqwQQfvQy2XB6U")
+        let response = try await lockAndMint.generateGatewayAddress()
+        XCTAssertEqual(Base58.encode(response.gatewayAddress.bytes), "2NC451uvR7AD5hvWNLQiYoqwQQfvQy2XB6U")
     }
     
-    func testGetDepositState() throws {
+    func testGetDepositState() async throws {
         let session = try createSession(sessionDays: 18874)
         
         let lockAndMint = try LockAndMint(
             rpcClient: Mock.rpcClient,
-            chain: Mock.solanaChain(),
+            chain: try await Mock.solanaChain(),
             mintTokenSymbol: "BTC",
             version: "1",
             destinationAddress: destinationAddress.data,
             session: session
         )
-        let response = try lockAndMint.generateGatewayAddress().toBlocking().first()!
+        let response = try await lockAndMint.generateGatewayAddress()
         XCTAssertEqual(Base58.encode(response.gatewayAddress.bytes), "2MyJ7zQxBCnwKuRNoE3UYD2cb9MDjdkacaF")
         let txHash = try lockAndMint.getDepositState(
             transactionHash: "01d32c22d721d7bf0cd944fc6e089b01f998e1e77db817373f2ee65e40e9462a",

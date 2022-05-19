@@ -23,8 +23,9 @@ class RenVMSolanaChainTests: XCTestCase {
     
     func testDecodeGatewayRegistryData() throws {
         let data = Data(base64Encoded: Mock.mockGatewayRegistryData)!
-        var pointer = 0
-        let gatewayRegistryData = try SolanaChain.GatewayRegistryData(buffer: data, pointer: &pointer)
+        
+        var reader = BinaryReader(bytes: data.bytes)
+        let gatewayRegistryData = try SolanaChain.GatewayRegistryData(from: &reader)
         
         XCTAssertTrue(gatewayRegistryData.isInitialized)
         XCTAssertEqual(gatewayRegistryData.owner, "GQy1uiRSpfkb3xxRXFuNhz7cCoa5P9NgEDAWyykMGB3J")
@@ -45,8 +46,9 @@ class RenVMSolanaChainTests: XCTestCase {
     
     func testDecodeGatewayStateData() throws {
         let data = Data(base64Encoded: Mock.mockGatewayStateData)!
-        var pointer = 0
-        let gatewayRegistryData = try SolanaChain.GatewayStateData(buffer: data, pointer: &pointer)
+        
+        var reader = BinaryReader(bytes: data.bytes)
+        let gatewayRegistryData = try SolanaChain.GatewayStateData(from: &reader)
         
         XCTAssertEqual(gatewayRegistryData.isInitialized, true)
         XCTAssertEqual(gatewayRegistryData.renVMAuthority.bytes.toHexString(), "44bb4ef43408072bc888afd1a5986ba0ce35cb54")
@@ -54,17 +56,20 @@ class RenVMSolanaChainTests: XCTestCase {
         XCTAssertEqual(gatewayRegistryData.burnCount, 8)
     }
     
-    func testResolveTokenGatewayContract() throws {
-        XCTAssertEqual(try Mock.solanaChain().resolveTokenGatewayContract(mintTokenSymbol: Mock.mintToken), "FsEACSS3nKamRKdJBaBDpZtDXWrHR2nByahr4ReoYMBH")
+    func testResolveTokenGatewayContract() async throws {
+        let solanaChain = try await Mock.solanaChain()
+        XCTAssertEqual(try solanaChain.resolveTokenGatewayContract(mintTokenSymbol: Mock.mintToken), "FsEACSS3nKamRKdJBaBDpZtDXWrHR2nByahr4ReoYMBH")
     }
     
-    func testGetSPLTokenPubkey() throws {
-        XCTAssertEqual(try Mock.solanaChain().getSPLTokenPubkey(mintTokenSymbol: Mock.mintToken), "FsaLodPu4VmSwXGr3gWfwANe4vKf8XSZcCh1CEeJ3jpD")
+    func testGetSPLTokenPubkey() async throws {
+        let solanaChain = try await Mock.solanaChain()
+        XCTAssertEqual(try solanaChain.getSPLTokenPubkey(mintTokenSymbol: Mock.mintToken), "FsaLodPu4VmSwXGr3gWfwANe4vKf8XSZcCh1CEeJ3jpD")
     }
     
-    func testGetAssociatedTokenAccount() throws {
+    func testGetAssociatedTokenAccount() async throws {
         let pubkey: PublicKey = "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
-        XCTAssertEqual(Base58.encode(try Mock.solanaChain().getAssociatedTokenAddress(address: pubkey.data, mintTokenSymbol: Mock.mintToken).bytes), "4Z9Dv58aSkG9bC8stA3aqsMNXnSbJHDQTDSeddxAD1tb")
+        let solanaChain = try await Mock.solanaChain()
+        XCTAssertEqual(Base58.encode(try solanaChain.getAssociatedTokenAddress(address: pubkey.data, mintTokenSymbol: Mock.mintToken).bytes), "4Z9Dv58aSkG9bC8stA3aqsMNXnSbJHDQTDSeddxAD1tb")
     }
     
     func testBuildRenVMMessage() throws {

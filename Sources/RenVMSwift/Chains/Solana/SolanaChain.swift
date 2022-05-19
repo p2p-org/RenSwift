@@ -16,7 +16,7 @@ public struct SolanaChain: RenVMChainType {
     // MARK: - Methods
     public static func load(
         client: RenVMRpcClientType,
-        solanaClient: SolanaAPIClient,
+        apiClient: SolanaAPIClient,
         blockchainClient: SolanaBlockchainClient
     ) async throws -> Self {
         let pubkey = try PublicKey(string: client.network.gatewayRegistry)
@@ -24,7 +24,7 @@ public struct SolanaChain: RenVMChainType {
             seeds: [Self.gatewayRegistryStateKey.data(using: .utf8)!],
             programId: pubkey
         )
-        let result: BufferInfo<GatewayRegistryData>? = try await solanaClient.getAccountInfo(
+        let result: BufferInfo<GatewayRegistryData>? = try await apiClient.getAccountInfo(
             account: stateKey.0.base58EncodedString
         )
         
@@ -32,7 +32,7 @@ public struct SolanaChain: RenVMChainType {
             throw SolanaError.couldNotRetrieveAccountInfo
         }
         
-        return .init(gatewayRegistryData: data, client: client, apiClient: solanaClient, blockchainClient: blockchainClient)
+        return .init(gatewayRegistryData: data, client: client, apiClient: apiClient, blockchainClient: blockchainClient)
     }
     
     func resolveTokenGatewayContract(mintTokenSymbol: String) throws -> PublicKey {
