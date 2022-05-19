@@ -21,7 +21,7 @@ class RenVMBurnAndReleaseTests: RestAPITests {
     }
     
     func testBurnState() throws {
-        let burnAndRelease = RenVM.BurnAndRelease(
+        let burnAndRelease = BurnAndRelease(
             rpcClient: RenVM.Mock.rpcClient,
             chain: RenVM.Mock.solanaChain(),
             mintTokenSymbol: "BTC",
@@ -29,7 +29,7 @@ class RenVMBurnAndReleaseTests: RestAPITests {
             burnTo: "Bitcoin"
         )
         
-        let burnDetails = RenVM.BurnAndRelease.BurnDetails(
+        let burnDetails = BurnAndRelease.BurnDetails(
             confirmedSignature: "2kNe8duPRcE9xxKLLVP92e9TBH5WvmVVWQJ18gEjqhgxsrKtBEBVfeXNFz5Un3yEEQJZkxY2ysQR4dGQaytnDM1i",
             nonce: 35,
             recipient: "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt",
@@ -50,7 +50,7 @@ class RenVMBurnAndReleaseTests: RestAPITests {
         
         let amount = "1000"
         
-        let burnAndRelease = RenVM.BurnAndRelease(
+        let burnAndRelease = BurnAndRelease(
             rpcClient: rpcClient,
             chain: solanaChain,
             mintTokenSymbol: "BTC",
@@ -65,7 +65,7 @@ class RenVMBurnAndReleaseTests: RestAPITests {
 //            signer: account.secretKey
 //        ).toBlocking().first()!
         
-        let detail: RenVM.BurnAndRelease.BurnDetails = .init(
+        let detail: BurnAndRelease.BurnDetails = .init(
             confirmedSignature: "5Dmpba9yiJSyGUejRveSz1aS463Qj1s3oeV1JT4VKmrPgQsKFyikArLuFSihBGsG9yYybEKkawFFAnx7pajLtE1K",
             nonce: 56,
             recipient: recipient,

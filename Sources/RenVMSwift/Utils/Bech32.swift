@@ -1,10 +1,3 @@
-//
-//  RenVM+Bech32.swift
-//  SolanaSwift
-//
-//  Created by Chung Tran on 14/09/2021.
-//
-
 import Foundation
 
 /// Bech32 checksum implementation

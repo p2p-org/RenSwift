@@ -9,43 +9,41 @@ import Foundation
 import CryptoSwift
 import SolanaSwift
 
-extension RenVM {
-    struct Hash {
-        static func generatePHash() -> Data {
-            Data([UInt8]().keccak256)
-        }
+struct Hash {
+    static func generatePHash() -> Data {
+        Data([UInt8]().keccak256)
+    }
+    
+    static func generateSHash(selector: RenVMSelector) -> Data {
+        Data(selector.toString().keccak256)
+    }
+    
+    static func generateGHash(
+        to: String,
+        tokenIdentifier: String,
+        nonce: [UInt8]
+    ) -> Data {
+        let pHash = generatePHash()
+        let sHash = Data(hex: tokenIdentifier)
+        let toBytes = Data(hex: to)
         
-        static func generateSHash(selector: Selector) -> Data {
-            Data(selector.toString().keccak256)
-        }
+        var data = Data()
+        data += pHash
+        data += sHash
+        data += toBytes
+        data += nonce
         
-        static func generateGHash(
-            to: String,
-            tokenIdentifier: String,
-            nonce: [UInt8]
-        ) -> Data {
-            let pHash = generatePHash()
-            let sHash = Data(hex: tokenIdentifier)
-            let toBytes = Data(hex: to)
-            
-            var data = Data()
-            data += pHash
-            data += sHash
-            data += toBytes
-            data += nonce
-            
-            return data.keccak256
-        }
-        
-        static func generateNHash(
-            nonce: [UInt8],
-            txId: [UInt8],
-            txIndex: UInt32
-        ) -> Data {
-            var data = Data()
-            data += nonce + txId + txIndex.bytesWithBigEndian
-            return data.keccak256
-        }
+        return data.keccak256
+    }
+    
+    static func generateNHash(
+        nonce: [UInt8],
+        txId: [UInt8],
+        txIndex: UInt32
+    ) -> Data {
+        var data = Data()
+        data += nonce + txId + txIndex.bytesWithBigEndian
+        return data.keccak256
     }
 }
 
@@ -86,7 +84,7 @@ extension Data {
     
     func fixSignatureSimple() throws -> Data {
         guard self.count > 64
-        else {throw RenVM.Error("Signature is not valid")}
+        else {throw RenVMError("Signature is not valid")}
         
         let r = Data(self[0..<32])
         let s = Data(self[32..<64])

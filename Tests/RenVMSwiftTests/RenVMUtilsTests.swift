@@ -19,7 +19,7 @@ class RenVMUtilsTests: XCTestCase {
     }
     
     func testAddressToBytes() throws {
-        let bytes = try RenVM.BurnAndRelease.addressToBytes(address: "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt")
+        let bytes = try BurnAndRelease.addressToBytes(address: "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt")
         XCTAssertEqual("0x" + bytes.hexString, "0x00ff9da567e62f30ea8654fa1d5fbd47bef8e3be13")
     }
 }

@@ -59,9 +59,9 @@ class RenVMLockAndMintTests: XCTestCase {
         XCTAssertEqual(txHash, "LLg3jxVXS4NEixjaBOUXocRqaK_Y0wk5HPshI1H3e6c")
     }
     
-    private func createSession(sessionDays: Long) throws -> RenVM.Session {
+    private func createSession(sessionDays: Long) throws -> RenVMSession {
         let interval = TimeInterval(sessionDays * 24 * 60 * 60)
         let createdAt = Date(timeIntervalSince1970: interval)
-        return try RenVM.Session(createdAt: createdAt)
+        return try RenVMSession(createdAt: createdAt)
     }
 }

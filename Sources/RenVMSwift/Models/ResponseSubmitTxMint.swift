@@ -7,8 +7,6 @@
 
 import Foundation
 
-extension RenVM {
-    struct ResponseSubmitTxMint: Decodable {
-        
-    }
+struct ResponseSubmitTxMint: Decodable {
+    
 }

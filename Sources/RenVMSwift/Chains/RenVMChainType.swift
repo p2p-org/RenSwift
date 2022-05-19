@@ -26,7 +26,7 @@ public protocol RenVMChainType {
         address: Data,
         mintTokenSymbol: String,
         signer: Data,
-        responceQueryMint: RenVM.ResponseQueryTxMint
+        responceQueryMint: ResponseQueryTxMint
     ) -> Single<String>
     
     func submitBurn(
@@ -35,11 +35,11 @@ public protocol RenVMChainType {
         amount: String,
         recipient: String,
         signer: Data
-    ) -> Single<RenVM.BurnAndRelease.BurnDetails>
+    ) -> Single<BurnAndRelease.BurnDetails>
 }
 
 extension RenVMChainType {
-    func selector(mintTokenSymbol: String, direction: RenVM.Selector.Direction) -> RenVM.Selector {
+    func selector(mintTokenSymbol: String, direction: RenVMSelector.Direction) -> RenVMSelector {
         .init(mintTokenSymbol: mintTokenSymbol, chainName: chainName, direction: direction)
     }
 }

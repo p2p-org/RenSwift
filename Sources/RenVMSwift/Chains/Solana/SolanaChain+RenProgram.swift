@@ -13,7 +13,7 @@ private extension SolanaSDK.PublicKey {
     static let secp256k1ProgramId: SolanaSDK.PublicKey = "KeccakSecp256k11111111111111111111111111111"
 }
 
-extension RenVM.SolanaChain {
+extension SolanaChain {
     struct RenProgram {
         static let ETHEREUM_ADDRESS_BYTES = 20
         static let SIGNATURE_OFFSETS_SERIALIZED_SIZE = 11
