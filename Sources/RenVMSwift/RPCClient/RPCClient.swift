@@ -1,10 +1,3 @@
-//
-//  RenVM+RPCClient.swift
-//  Alamofire
-//
-//  Created by Chung Tran on 15/09/2021.
-//
-
 import Foundation
 import RxAlamofire
 import RxSwift
