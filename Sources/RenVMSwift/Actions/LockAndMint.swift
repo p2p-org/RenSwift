@@ -1,5 +1,4 @@
 import Foundation
-import RxSwift
 
 public typealias Long = Int64
 
@@ -40,32 +39,25 @@ public struct LockAndMint {
     }
     
     // MARK: - Methods
-    public func generateGatewayAddress() -> Single<GatewayAddressResponse> {
-        let sendTo: Data
-        do {
-            sendTo = try chain.getAssociatedTokenAddress(address: destinationAddress, mintTokenSymbol: mintTokenSymbol)
-        } catch {
-            return .error(error)
-        }
+    public func generateGatewayAddress() async throws -> GatewayAddressResponse {
+        let sendTo = try chain.getAssociatedTokenAddress(address: destinationAddress, mintTokenSymbol: mintTokenSymbol)
         let sendToHex = sendTo.hexString
         let tokenGatewayContractHex = Hash.generateSHash(
             selector: selector(direction: .to)
         ).hexString
         let gHash = Hash.generateGHash(to: sendToHex, tokenIdentifier: tokenGatewayContractHex, nonce: Data(hex: session.nonce).bytes)
         
-        return rpcClient.selectPublicKey(mintTokenSymbol: mintTokenSymbol)
-            .observe(on: CurrentThreadScheduler.instance)
-            .map { gPubkey in
-                guard let gPubkey = gPubkey
-                else {throw RenVMError("Provider's public key not found")}
-                
-                let gatewayAddress = Script.createAddressByteArray(
-                    gGubKeyHash: gPubkey.hash160,
-                    gHash: gHash,
-                    prefix: Data([self.rpcClient.network.p2shPrefix])
-                )
-                return (gatewayAddress: gatewayAddress, sendTo: sendTo, gHash: gHash, gPubkey: gPubkey)
-            }
+        let gPubkey = try await rpcClient.selectPublicKey(mintTokenSymbol: mintTokenSymbol)
+           
+        guard let gPubkey = gPubkey
+        else {throw RenVMError("Provider's public key not found")}
+        
+        let gatewayAddress = Script.createAddressByteArray(
+            gGubKeyHash: gPubkey.hash160,
+            gHash: gHash,
+            prefix: Data([self.rpcClient.network.p2shPrefix])
+        )
+        return (gatewayAddress: gatewayAddress, sendTo: sendTo, gHash: gHash, gPubkey: gPubkey)
     }
     
     @discardableResult
@@ -113,53 +105,45 @@ public struct LockAndMint {
         return state
     }
     
-    public func submitMintTransaction(state: State) -> Single<String> {
+    public func submitMintTransaction(state: State) async throws -> String {
         let selector = selector(direction: .to)
         
         // get input
-        let mintTx: MintTransactionInput
-        let hash: String
-        do {
-            mintTx = try MintTransactionInput(state: state, nonce: Data(hex: session.nonce))
-            hash = try mintTx
-                .hash(selector: selector, version: version)
-                .base64urlEncodedString()
-        } catch {
-            return .error(error)
-        }
+        let mintTx = try MintTransactionInput(state: state, nonce: Data(hex: session.nonce))
+        let hash = try mintTx
+            .hash(selector: selector, version: version)
+            .base64urlEncodedString()
         
         // send transaction
-        return rpcClient.submitTx(
+        _ = try await rpcClient.submitTx(
             hash: hash,
             selector: selector,
             version: version,
             input: mintTx
         )
-            .map {_ in hash}
+        return hash
     }
     
-    public func mint(state: State, signer: Data) -> Single<(amountOut: String?, signature: String)> {
+    public func mint(state: State, signer: Data) async throws -> (amountOut: String?, signature: String) {
         guard let txHash = state.txHash else {
-            return .error(RenVMError("txHash not found"))
+            throw RenVMError("txHash not found")
         }
-        var amountOut: String?
-        return rpcClient.queryMint(txHash: txHash)
-            .map {response in
-                guard response.txStatus == "done" else {
-                    throw RenVMError.paramsMissing
-                }
-                amountOut = response.tx.out.v.amount
-                return response
-            }
-            .flatMap {res in
-                chain.submitMint(
-                    address: self.destinationAddress,
-                    mintTokenSymbol: self.mintTokenSymbol,
-                    signer: signer,
-                    responceQueryMint: res
-                )
-            }
-            .map {(amountOut: amountOut, signature: $0)}
+        let response = try await rpcClient.queryMint(txHash: txHash)
+        
+        guard response.txStatus == "done" else {
+            throw RenVMError.paramsMissing
+        }
+        
+        let amountOut = response.tx.out.v.amount
+        
+        let signature = try await chain.submitMint(
+            address: self.destinationAddress,
+            mintTokenSymbol: self.mintTokenSymbol,
+            signer: signer,
+            responceQueryMint: response
+        )
+        
+        return (amountOut: amountOut, signature: signature)
     }
     
     private func selector(direction: Selector.Direction) -> Selector {
