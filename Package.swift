@@ -18,7 +18,6 @@ let package = Package(
             targets: ["RenVMSwift"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/ReactiveX/RxSwift.git", from: "6.2.0"),
         .package(url: "https://github.com/p2p-org/solana-swift.git", branch: "refactor/pwn-3297")
     ],
     targets: [
@@ -32,6 +31,6 @@ let package = Package(
         ),
         .testTarget(
             name: "RenVMSwiftTests",
-            dependencies: ["RenVMSwift",.product(name: "RxBlocking", package: "RxSwift")]),
+            dependencies: ["RenVMSwift"]),
     ]
 )

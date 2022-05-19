@@ -7,13 +7,12 @@
 //
 
 import XCTest
-import RxSwift
 @testable import SolanaSwift
 @testable import RenVMSwift
 
 class RenVMSolanaChainTests: XCTestCase {
     func testGatewayRegistryStateKey() throws {
-        let network = Network.testnet
+        let network = RenVMSwift.Network.testnet
         
         let pubkey = try PublicKey(string: network.gatewayRegistry)
         XCTAssertEqual(pubkey, "REGrPFKQhRneFFdUV3e9UDdzqUJyS6SKj88GdXFCRd2")

@@ -7,8 +7,6 @@
 //
 
 import Foundation
-import RxSwift
-import RxBlocking
 @testable import SolanaSwift
 @testable import RenVMSwift
 
