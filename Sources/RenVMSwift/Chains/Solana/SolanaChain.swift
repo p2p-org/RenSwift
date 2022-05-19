@@ -312,32 +312,43 @@ extension SolanaChain {
         let burnCount: UInt64
         let underlyingDecimals: UInt8
         
+        init(from reader: inout BinaryReader) throws {
+            self.isInitialized = try .init(from: &reader)
+            self.renVMAuthority = try .init(from: &reader)
+            self.selectors = try .init(from: &reader)
+            self.burnCount = try .init(from: &reader)
+            self.underlyingDecimals = try .init(from: &reader)
+        }
         
-        struct RenVMAuthority: BufferLayoutProperty {
+        func serialize(to writer: inout Data) throws {
+            try isInitialized.serialize(to: &writer)
+            try renVMAuthority.serialize(to: &writer)
+            try selectors.serialize(to: &writer)
+            try burnCount.serialize(to: &writer)
+            try underlyingDecimals.serialize(to: &writer)
+        }
+        
+        struct RenVMAuthority: BorshCodable, Codable {
             let bytes: [UInt8]
             
-            init(buffer: Data, pointer: inout Int) throws {
-                guard buffer.bytes.count > pointer else {throw BufferLayoutSwift.Error.bytesLengthIsNotValid}
-                bytes = Array(buffer[pointer..<pointer+20])
-                pointer += 20
+            init(from reader: inout BinaryReader) throws {
+                self.bytes = try reader.read(count: 20)
             }
             
-            func serialize() throws -> Data {
-                Data(bytes)
+            func serialize(to writer: inout Data) throws {
+                writer.append(contentsOf: bytes)
             }
         }
         
-        struct Selectors: BufferLayoutProperty {
+        struct Selectors: BorshCodable, Codable {
             let bytes: [UInt8]
             
-            init(buffer: Data, pointer: inout Int) throws {
-                guard buffer.bytes.count > pointer else {throw BufferLayoutSwift.Error.bytesLengthIsNotValid}
-                bytes = Array(buffer[pointer..<pointer+32])
-                pointer += 32
+            init(from reader: inout BinaryReader) throws {
+                self.bytes = try reader.read(count: 32)
             }
             
-            func serialize() throws -> Data {
-                Data(bytes)
+            func serialize(to writer: inout Data) throws {
+                writer.append(contentsOf: bytes)
             }
         }
     }
@@ -349,38 +360,20 @@ extension SolanaChain {
         let selectors: [PublicKey]
         let gateways: [PublicKey]
         
-        public init(buffer: Data, pointer: inout Int) throws {
-            self.isInitialized = try Bool(buffer: buffer, pointer: &pointer)
-            self.owner = try .init(buffer: buffer, pointer: &pointer)
-            self.count = try UInt64(buffer: buffer, pointer: &pointer)
-            
-            // selectors
-            let selectorsSize = try UInt32(buffer: buffer, pointer: &pointer)
-            var selectors = [PublicKey]()
-            for _ in 0..<selectorsSize {
-                selectors.append(try .init(buffer: buffer, pointer: &pointer))
-            }
-            self.selectors = selectors
-            
-            // gateways:
-            let gatewaysSize = try UInt32(buffer: buffer, pointer: &pointer)
-            var gateways = [PublicKey]()
-            for _ in 0..<gatewaysSize {
-                gateways.append(try .init(buffer: buffer, pointer: &pointer))
-            }
-            self.gateways = gateways
+        init(from reader: inout BinaryReader) throws {
+            self.isInitialized = try .init(from: &reader)
+            self.owner = try .init(from: &reader)
+            self.count = try .init(from: &reader)
+            self.selectors = try .init(from: &reader)
+            self.gateways = try .init(from: &reader)
         }
         
-        public func serialize() throws -> Data {
-            var data = Data()
-            data += try isInitialized.serialize()
-            data += try owner.serialize()
-            data += try count.serialize()
-            data += try (UInt32(selectors.count)).serialize()
-            data += try selectors.reduce(Data(), {$0 + (try $1.serialize())})
-            data += try (UInt32(gateways.count)).serialize()
-            data += try gateways.reduce(Data(), {$0 + (try $1.serialize())})
-            return data
+        func serialize(to writer: inout Data) throws {
+            try isInitialized.serialize(to: &writer)
+            try owner.serialize(to: &writer)
+            try count.serialize(to: &writer)
+            try selectors.serialize(to: &writer)
+            try gateways.serialize(to: &writer)
         }
     }
 }
