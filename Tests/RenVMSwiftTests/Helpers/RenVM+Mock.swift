@@ -39,6 +39,10 @@ extension RenVM {
         }
         
         struct SolanaClient: RenVMSolanaAPIClientType {
+            func waitForConfirmation(signature: String) -> Completable {
+                .empty()
+            }
+            
             func getAccountInfo<T>(account: String, decodedTo: T.Type) -> Single<SolanaSDK.BufferInfo<T>> where T : DecodableBufferLayout {
                 if decodedTo == RenVM.SolanaChain.GatewayRegistryData.self {
                     let data = Data(base64Encoded: RenVM.Mock.mockGatewayRegistryData)!
