@@ -97,6 +97,10 @@ public struct RpcClient: RenVMRpcClientType {
         let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
         let isValidStatusCode = (200..<300).contains(statusCode)
         
+        if log {
+            Logger.log(event: .response, message: data.jsonString ?? "")
+        }
+        
         let res = try JSONDecoder().decode(Response<T>.self, from: data)
         
         if isValidStatusCode, let result = res.result {

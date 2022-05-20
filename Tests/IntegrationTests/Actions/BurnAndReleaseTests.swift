@@ -14,13 +14,14 @@ class BurnAndReleaseTests: XCTestCase {
     
     
     func testBurnAndRelease() async throws {
-        let rpcClient = RpcClient(network: .testnet)
-        let solanaAPIClient = JSONRPCAPIClient(
-            endpoint: .init(
-                address: "https://api.mainnet-beta.solana.com",
-                network: .mainnetBeta
-            )
+        let network: RenVMSwift.Network = .devnet
+        let endpoint = APIEndPoint(
+            address: network == .devnet ? "https://api.devnet.solana.com": "https://api.testnet.solana.com",
+            network: network == .devnet ? .devnet: .testnet
         )
+        
+        let rpcClient = RpcClient(network: network)
+        let solanaAPIClient = JSONRPCAPIClient(endpoint: endpoint)
 
         let solanaChain = try await SolanaChain.load(
             client: rpcClient,
@@ -28,9 +29,12 @@ class BurnAndReleaseTests: XCTestCase {
             blockchainClient: BlockchainClient(apiClient: solanaAPIClient)
         )
 
-        let account = try await Account(phrase: "matter outer client aspect pear cigar caution robust easily merge dwarf wide short sail unusual indicate roast giraffe clay meat crowd exile curious vibrant".components(separatedBy: " "), network: .testnet)
+        let account = try await Account(
+            phrase: "matter outer client aspect pear cigar caution robust easily merge dwarf wide short sail unusual indicate roast giraffe clay meat crowd exile curious vibrant".components(separatedBy: " "),
+            network: network == .devnet ? .devnet: .testnet
+        )
         let recipient = "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt"
-        let amount = "1000"
+        let amount = 0.0001.toLamport(decimals: 6) // 0.0001 renBTC
 
         let burnAndRelease = BurnAndRelease(
             rpcClient: rpcClient,
@@ -42,7 +46,7 @@ class BurnAndReleaseTests: XCTestCase {
 
         let detail = try await burnAndRelease.submitBurnTransaction(
             account: account.publicKey.data,
-            amount: amount,
+            amount: String(amount),
             recipient: recipient,
             signer: account.secretKey
         )

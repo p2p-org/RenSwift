@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Network {
+public struct Network: Equatable {
     public private(set) var chain: String
     public private(set) var endpoint: String
     public private(set) var lightNode: String
