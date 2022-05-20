@@ -55,8 +55,28 @@ class LockAndMintTests: XCTestCase {
         let address = Base58.encode(response.gatewayAddress.bytes)
         XCTAssertEqual(address, "2N5crcCGWhn1LUkPpV2ttDKupUncAcXJ4yM")
         
-        // Get utxo
-        let url = "https://blockstream.info/testnet/api/address/\(address)/utxo"
+        // Get stream infos, retry until a
+        let streamInfos = try await Task<[BlockstreamInfo], Error>.retrying(
+            where: { error in
+                (error as? TestError) == .noStreamInfo
+            },
+            maxRetryCount: .max,
+            retryDelay: 5
+        ) {
+            let streamInfos = try? await self.renRPCClient.getBlockstreamInfo(address: address)
+            
+            guard let streamInfos = streamInfos,
+                  !streamInfos.isEmpty,
+                  streamInfos.contains(where: {$0.status.confirmed})
+            else {
+                throw TestError.noStreamInfo
+            }
+            return streamInfos
+        }.value
+        
+        // Get confirmed one
+        let confirmedStreamInfo = streamInfos.first(where: {$0.status.confirmed})!
+        
         
         
 //        let state = try lockAndMint.getDepositState(
@@ -75,4 +95,6 @@ class LockAndMintTests: XCTestCase {
     }
 }
 
-
+private enum TestError: String, Error, Equatable {
+    case noStreamInfo
+}
