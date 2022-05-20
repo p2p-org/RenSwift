@@ -4,19 +4,10 @@ import RenVMSwift
 import SolanaSwift
 
 class BurnAndReleaseTests: XCTestCase {
-    //    override var endpoint: APIEndPoint {
-    //        .init(address: "https://api.devnet.solana.com", network: .devnet)
-    //    }
-    //
-    //    override var overridingAccount: String? {
-    //        "matter outer client aspect pear cigar caution robust easily merge dwarf wide short sail unusual indicate roast giraffe clay meat crowd exile curious vibrant"
-    //    }
-    
-    
     func testBurnAndRelease() async throws {
-        let renNetwork: RenVMSwift.Network = .devnet
-        let solanaNetwork: SolanaSwift.Network = .testnet
-        let solanaURL = "https://api.testnet.solana.com"
+        let renNetwork: RenVMSwift.Network = .testnet
+        let solanaNetwork: SolanaSwift.Network = .devnet
+        let solanaURL = "https://api.devnet.solana.com"
         
         let endpoint = APIEndPoint(
             address: solanaURL,
