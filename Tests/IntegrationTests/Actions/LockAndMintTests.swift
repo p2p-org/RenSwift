@@ -56,14 +56,14 @@ class LockAndMintTests: XCTestCase {
         XCTAssertEqual(address, "2N5crcCGWhn1LUkPpV2ttDKupUncAcXJ4yM")
         
         // Get stream infos, retry until a tx is confirmed
-        let streamInfos = try await Task<[BlockstreamInfo], Error>.retrying(
+        let streamInfos = try await Task<[IncomingTransaction], Error>.retrying(
             where: { error in
                 (error as? TestError) == .noStreamInfo
             },
             maxRetryCount: .max,
             retryDelay: 5
         ) {
-            let streamInfos = try? await self.renRPCClient.getBlockstreamInfo(address: address)
+            let streamInfos = try? await self.renRPCClient.getIncomingTransactions(address: address)
             
             guard let streamInfos = streamInfos,
                   !streamInfos.isEmpty,

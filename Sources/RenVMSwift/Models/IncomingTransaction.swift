@@ -1,6 +1,6 @@
 import Foundation
 
-public struct BlockstreamInfo: Decodable, Equatable {
+public struct IncomingTransaction: Decodable, Equatable {
     public let txid: String
     public var vout: UInt64
     public var status: BlockstreamInfoStatus
