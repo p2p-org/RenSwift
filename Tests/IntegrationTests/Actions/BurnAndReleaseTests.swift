@@ -14,24 +14,28 @@ class BurnAndReleaseTests: XCTestCase {
     
     
     func testBurnAndRelease() async throws {
-        let network: RenVMSwift.Network = .devnet
+        let renNetwork: RenVMSwift.Network = .devnet
+        let solanaNetwork: SolanaSwift.Network = .testnet
+        let solanaURL = "https://api.testnet.solana.com"
+        
         let endpoint = APIEndPoint(
-            address: network == .devnet ? "https://api.devnet.solana.com": "https://api.testnet.solana.com",
-            network: network == .devnet ? .devnet: .testnet
+            address: solanaURL,
+            network: solanaNetwork
         )
         
-        let rpcClient = RpcClient(network: network)
+        let rpcClient = RpcClient(network: renNetwork)
         let solanaAPIClient = JSONRPCAPIClient(endpoint: endpoint)
+        let solanaBlockchainClient = BlockchainClient(apiClient: solanaAPIClient)
 
         let solanaChain = try await SolanaChain.load(
             client: rpcClient,
             apiClient: solanaAPIClient,
-            blockchainClient: BlockchainClient(apiClient: solanaAPIClient)
+            blockchainClient: solanaBlockchainClient
         )
 
         let account = try await Account(
             phrase: "matter outer client aspect pear cigar caution robust easily merge dwarf wide short sail unusual indicate roast giraffe clay meat crowd exile curious vibrant".components(separatedBy: " "),
-            network: network == .devnet ? .devnet: .testnet
+            network: solanaNetwork
         )
         let recipient = "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt"
         let amount = 0.0001.toLamport(decimals: 6) // 0.0001 renBTC
