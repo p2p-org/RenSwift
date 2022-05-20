@@ -55,24 +55,54 @@ class LockAndMintTests: XCTestCase {
         let address = Base58.encode(response.gatewayAddress.bytes)
         XCTAssertEqual(address, "2N5crcCGWhn1LUkPpV2ttDKupUncAcXJ4yM")
         
-        // Get utxo
-        let url = "https://blockstream.info/testnet/api/address/\(address)/utxo"
+        // Get stream infos, retry until a tx is confirmed
+        let streamInfos = try await Task<[IncomingTransaction], Error>.retrying(
+            where: { error in
+                (error as? TestError) == .noStreamInfo
+            },
+            maxRetryCount: .max,
+            retryDelay: 5
+        ) {
+            let streamInfos = try? await self.renRPCClient.getIncomingTransactions(address: address)
+            
+            guard let streamInfos = streamInfos,
+                  !streamInfos.isEmpty,
+                  streamInfos.contains(where: {$0.status.confirmed})
+            else {
+                throw TestError.noStreamInfo
+            }
+            return streamInfos
+        }.value
         
+        // Get confirmed one
+        let tx = streamInfos.first(where: {$0.status.confirmed})!
         
-//        let state = try lockAndMint.getDepositState(
-//            transactionHash: "00000000000000087312dc18acee813f5ec94b0f2a2b22f8b0cf04939ffa76bf",
-//            txIndex: "1",
-//            amount: "72000",
-//            sendTo: response.sendTo,
-//            gHash: response.gHash,
-//            gPubkey: response.gPubkey
-//        )
-//
-//        _ = try await lockAndMint.submitMintTransaction(state: state)
-//
-//        let tx = try await lockAndMint.mint(state: state, signer: account.secretKey)
+        let state = try lockAndMint.getDepositState(
+            transactionHash: tx.txid,
+            txIndex: String(tx.vout),
+            amount: String(tx.value),
+            sendTo: response.sendTo,
+            gHash: response.gHash,
+            gPubkey: response.gPubkey
+        )
         
+        // Submit mint transaction
+        _ = try await lockAndMint.submitMintTransaction(state: state)
+        
+        let result = try await Task<(amountOut: String?, signature: String), Error>.retrying(
+            where: { error in
+                (error as? RenVMError) == .paramsMissing
+            },
+            maxRetryCount: .max,
+            retryDelay: 5
+        ) {
+            try await lockAndMint.mint(state: state, signer: self.account.secretKey)
+        }.value
+        
+        print(result)
     }
 }
 
-
+private enum TestError: String, Error, Equatable {
+    case noStreamInfo
+}

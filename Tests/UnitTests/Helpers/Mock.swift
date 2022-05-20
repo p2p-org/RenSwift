@@ -35,6 +35,9 @@ struct Mock {
         func selectPublicKey(mintTokenSymbol: String) async throws -> Data? {
             Data(base64Encoded: "Aw3WX32ykguyKZEuP0IT3RUOX5csm3PpvnFNhEVhrDVc")
         }
+        func getIncomingTransactions(address: String) async throws -> [IncomingTransaction] {
+            fatalError()
+        }
     }
     
     struct SolanaAPIClient: SolanaSwift.SolanaAPIClient {
