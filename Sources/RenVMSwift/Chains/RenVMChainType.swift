@@ -28,6 +28,10 @@ public protocol RenVMChainType {
         recipient: String,
         signer: Data
     ) async throws -> BurnAndRelease.BurnDetails
+    
+    func waitForConfirmation(
+        signature: String
+    ) async throws
 }
 
 extension RenVMChainType {

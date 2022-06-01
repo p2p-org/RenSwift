@@ -276,6 +276,10 @@ public struct SolanaChain: RenVMChainType {
         return signatures.first?.signature ?? ""
     }
     
+    public func waitForConfirmation(signature: String) async throws {
+        try await apiClient.waitForConfirmation(signature: signature, ignoreStatus: true)
+    }
+    
     // MARK: - Static methods
     public static func buildRenVMMessage(
         pHash: Data,

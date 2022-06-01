@@ -33,8 +33,11 @@ class LockAndMintTests: XCTestCase {
     
     func testLockAndMint() async throws {
         let createdAt = Date(timeIntervalSinceReferenceDate: 674714392.613203)
+        let calendar = Calendar.current
+        let endAt = calendar.date(byAdding: .year, value: 3, to: createdAt)
+        
         // Create session
-        let session = try Session(createdAt: createdAt)
+        let session = try Session(createdAt: createdAt, endAt: endAt)
         
         // Initialize service
         let lockAndMint = try LockAndMint(
@@ -98,7 +101,7 @@ class LockAndMintTests: XCTestCase {
         ) {
             try await lockAndMint.mint(state: state, signer: self.account.secretKey)
         }.value
-        
+
         print(result)
     }
 }

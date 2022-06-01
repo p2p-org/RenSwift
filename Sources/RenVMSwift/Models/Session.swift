@@ -7,7 +7,7 @@ public struct Session: Codable {
         createdAt: Date = Date(),
         endAt: Date? = nil
     ) throws {
-        if let endAt = endAt, endAt > createdAt {
+        if let endAt = endAt, endAt <= createdAt {
             throw RenVMError("Invalid session")
         }
         
