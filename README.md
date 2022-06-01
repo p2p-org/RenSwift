@@ -41,7 +41,7 @@ class PersistentStore: BurnAndReleasePersistentStore {
     }
 }
 
-// create instance of service (all failured transaction from last time will be retried)
+// create instance of service
 let service = BurnAndReleaseServiceImpl(
     rpcClient: renRPCClient,
     chainProvider: SolanaChainProvider(),
@@ -49,6 +49,9 @@ let service = BurnAndReleaseServiceImpl(
     persistentStore: PersistentStore(),
     version: "1"
 )
+
+// resume all failured transaction from last time
+service.resume()
 
 // burn and release
 let tx = try await service.burnAndRelease(recipient: "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt", amount: 0.0001.toLamport(decimals: 8)) // 0.0001 renBTC

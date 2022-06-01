@@ -27,6 +27,8 @@ class BurnAndReleaseServiceTests: XCTestCase {
     }
     
     func testBurnAndReleaseService() async throws {
+        service.resume()
+        
         let tx = try await service.burnAndRelease(recipient: "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt", amount: 0.0001.toLamport(decimals: 8)) // 0.0001 renBTC
         print(tx)
     }

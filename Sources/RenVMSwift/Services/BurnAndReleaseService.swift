@@ -3,6 +3,8 @@ import SolanaSwift
 
 /// The service for burn and release
 public protocol BurnAndReleaseService {
+    /// Resume on going tasks
+    func resume()
     /// Check if network is testnet
     func isTestNet() -> Bool
     /// Get fee of burn and release
@@ -85,7 +87,9 @@ public class BurnAndReleaseServiceImpl: BurnAndReleaseService {
         self.destinationChain = destinationChain
         self.persistentStore = persistentStore
         self.version = version
-
+    }
+    
+    public func resume() {
         Task {
             try await reload()
             try await releaseUnfinishedTxsFromPersistentStore()
