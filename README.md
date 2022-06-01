@@ -5,9 +5,56 @@
 [![License](https://img.shields.io/cocoapods/l/RenSwift.svg?style=flat)](https://cocoapods.org/pods/RenSwift)
 [![Platform](https://img.shields.io/cocoapods/p/RenSwift.svg?style=flat)](https://cocoapods.org/pods/RenSwift)
 
-## Example
+## How to use
+### Sending
+```swift
+// define ChainProvider
+class SolanaChainProvider: ChainProvider {
+    func getAccount() async throws -> (publicKey: Data, secret: Data) {
+        let account = // account in solana chain
+        return (publicKey: account.publicKey.data, secret: account.secretKey)
+    }
+    
+    func load() async throws -> RenVMChainType {
+        try await SolanaChain.load(
+            client: renRPCClient,
+            apiClient: solanaAPIClient,
+            blockchainClient: BlockchainClient(apiClient: solanaAPIClient)
+        )
+    }
+}
 
-To run the example project, clone the repo, and run `pod install` from the Example directory first.
+// define persistentStore for re-release transaction in case of failure
+class PersistentStore: BurnAndReleasePersistentStore {
+    private var fileStore = SomeFileStore()
+    
+    func getNonReleasedTransactions() -> [BurnAndRelease.BurnDetails] {
+        fileStore.getSavedTxs()
+    }
+    
+    func persistNonReleasedTransactions(_ transaction: BurnAndRelease.BurnDetails) {
+        fileStore.write(transaction)
+    }
+    
+    func markAsReleased(_ transaction: BurnAndRelease.BurnDetails) {
+        fileStore.removeAll(where: {$0.confirmedSignature == transaction.confirmedSignature})
+    }
+}
+
+// create instance of service (all failured transaction from last time will be retried)
+let service = BurnAndReleaseServiceImpl(
+    rpcClient: renRPCClient,
+    chainProvider: SolanaChainProvider(),
+    destinationChain: .bitcoin,
+    persistentStore: PersistentStore(),
+    version: "1"
+)
+
+// burn and release
+let tx = try await service.burnAndRelease(recipient: "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt", amount: 0.0001.toLamport(decimals: 8)) // 0.0001 renBTC
+print(tx)
+
+```
 
 ## Requirements
 

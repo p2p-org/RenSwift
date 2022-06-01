@@ -15,14 +15,6 @@ public protocol BurnAndReleaseService {
     func burnAndRelease(recipient: String, amount: UInt64) async throws -> String
 }
 
-/// Chain provider
-public protocol RenVMChainProvider {
-    /// Get authorized account from chain
-    func getAccount() async throws -> (publicKey: Data, secret: Data)
-    /// Load chain
-    func load() async throws -> RenVMChainType
-}
-
 /// Persistent store for recovering transaction in case of failure
 public protocol BurnAndReleasePersistentStore {
     /// Get last non released transactions for retrying
@@ -69,7 +61,7 @@ public class BurnAndReleaseServiceImpl: BurnAndReleaseService {
     // MARK: - Dependencies
 
     private let rpcClient: RenVMRpcClientType
-    private let chainProvider: RenVMChainProvider
+    private let chainProvider: ChainProvider
     private let destinationChain: DestinationChain
     private let persistentStore: BurnAndReleasePersistentStore
     private let version: String
@@ -83,7 +75,7 @@ public class BurnAndReleaseServiceImpl: BurnAndReleaseService {
 
     public init(
         rpcClient: RenVMRpcClientType,
-        chainProvider: RenVMChainProvider,
+        chainProvider: ChainProvider,
         destinationChain: DestinationChain,
         persistentStore: BurnAndReleasePersistentStore,
         version: String

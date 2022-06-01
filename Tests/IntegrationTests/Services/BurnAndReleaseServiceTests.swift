@@ -43,7 +43,7 @@ fileprivate let endpoint = APIEndPoint(
 )
 fileprivate let solanaAPIClient = JSONRPCAPIClient(endpoint: endpoint)
 
-class SolanaChainProvider: RenVMChainProvider {
+class SolanaChainProvider: ChainProvider {
     func getAccount() async throws -> (publicKey: Data, secret: Data) {
         let account = try await Account(
             phrase: "matter outer client aspect pear cigar caution robust easily merge dwarf wide short sail unusual indicate roast giraffe clay meat crowd exile curious vibrant".components(separatedBy: " "),
