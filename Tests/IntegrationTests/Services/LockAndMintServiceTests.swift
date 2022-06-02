@@ -28,7 +28,7 @@ class LockAndMintServiceTests: XCTestCase {
         if let session = await persistentStore.session,
            session.isValid
         {
-            try await service.start()
+            try await service.resume()
         } else {
             try await service.createSession(endAt: Date().addingTimeInterval(60*60*24*365*3)) // 3 years
         }

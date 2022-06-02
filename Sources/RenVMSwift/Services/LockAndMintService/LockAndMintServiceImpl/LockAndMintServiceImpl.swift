@@ -66,7 +66,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     /// Start the service
-    public func start() async throws {
+    public func resume() async throws {
         // clean
         clean()
         
@@ -78,7 +78,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         }
         
         // resume
-        try await resume()
+        try await _resume()
     }
     
     /// Create new session
@@ -93,7 +93,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         try await persistentStore.save(session: session)
         
         // resume
-        try await resume()
+        try await _resume()
     }
     
     // MARK: - Private
@@ -105,7 +105,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     /// Resume the current session
-    private func resume() async throws {
+    private func _resume() async throws {
         // get account
         let account = try await chainProvider.getAccount()
         
