@@ -192,23 +192,12 @@ public class LockAndMintServiceImpl: LockAndMintService {
             self?.taskGroups.append(group)
             for tx in txs {
                 group.addTask { [weak self] in
-                    try await self?.submitIfNeededAndMintRetrying(tx)
+                    try await self?.submitIfNeededAndMint(tx)
                 }
             }
             
             for try await _ in group {}
         }
-    }
-    
-    /// Submit if needed and mint tx retry forever
-    func submitIfNeededAndMintRetrying(_ tx: LockAndMint.ProcessingTx) async throws {
-        try await Task.retrying(
-            where: {_ in true},
-            maxRetryCount: .max,
-            retryDelay: 10
-        ) { [weak self] in
-            try await self?.submitIfNeededAndMint(tx)
-        }.value
     }
     
     /// Submit if needed and mint tx
