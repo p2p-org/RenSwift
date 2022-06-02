@@ -28,17 +28,17 @@ public protocol LockAndMintServicePersistentStore {
     // MARK: - ProcessingTransaction
     
     /// Transaction which are being processed
-    var processingTransactions: LockAndMintProcessingTx { get async }
+    var processingTransactions: LockAndMint.ProcessingTx { get async }
     
     /// Mark as received
-    func markAsReceived(processingTransaction: LockAndMintProcessingTx, at date: Date) async throws
+    func markAsReceived(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
     
     /// Mark as confimed
-    func markAsConfirmed(processingTransaction: LockAndMintProcessingTx, at date: Date) async throws
+    func markAsConfirmed(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
     
     /// Mark as submited
-    func markAsSubmited(processingTransaction: LockAndMintProcessingTx, at date: Date) async throws
+    func markAsSubmited(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
     
     /// Mark as minted
-    func markAsMinted(processingTransaction: LockAndMintProcessingTx, at date: Date) async throws
+    func markAsMinted(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
 }

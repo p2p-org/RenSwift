@@ -1,22 +1,24 @@
 import Foundation
 
-public struct LockAndMintProcessingTx: Codable, Hashable {
-    public static let maxVote: UInt64 = 3
-    public var tx: IncomingTransaction
-    public var receivedAt: Date?
-    public var oneVoteAt: Date?
-    public var twoVoteAt: Date?
-    public var threeVoteAt: Date?
-    public var confirmedAt: Date?
-    public var submitedAt: Date?
-    public var mintedAt: Date?
+extension LockAndMint {
+    public struct ProcessingTx: Codable, Hashable {
+        public static let maxVote: UInt64 = 3
+        public var tx: LockAndMint.IncomingTransaction
+        public var receivedAt: Date?
+        public var oneVoteAt: Date?
+        public var twoVoteAt: Date?
+        public var threeVoteAt: Date?
+        public var confirmedAt: Date?
+        public var submitedAt: Date?
+        public var mintedAt: Date?
 
-    public var value: Double {
-        tx.value.convertToBalance(decimals: 8)
+        public var value: Double {
+            tx.value.convertToBalance(decimals: 8)
+        }
     }
 }
 
-extension Array where Element == LockAndMintProcessingTx {
+extension Array where Element == LockAndMint.ProcessingTx {
     func grouped() -> (minted: [Element], submited: [Element], confirmed: [Element], received: [Element]) {
         var minted = [Element]()
         var submited = [Element]()
