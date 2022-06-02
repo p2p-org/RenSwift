@@ -39,20 +39,24 @@ public class LockAndMintServiceImpl: LockAndMintService {
     // MARK: - Dependencies
     
     /// PersistentStore for storing current work
-    let persistentStore: LockAndMintServicePersistentStore
+    private let persistentStore: LockAndMintServicePersistentStore
     
-    let chainProvider: ChainProvider
+    private let chainProvider: ChainProvider
     
     /// API Client for RenVM
-    let rpcClient: RenVMRpcClientType
+    private let rpcClient: RenVMRpcClientType
     
     /// Mint token
-    let mintToken: MintToken
+    private let mintToken: MintToken
     
     /// Version of renVM
-    let version: String
+    private let version: String
+    
+    /// Refreshing rate
+    private let refreshingRate: TimeInterval
     
     // MARK: - Properties
+    private var timer: Timer?
     
     
     // MARK: - Initializers
@@ -61,17 +65,22 @@ public class LockAndMintServiceImpl: LockAndMintService {
         chainProvider: ChainProvider,
         rpcClient: RenVMRpcClientType,
         mintToken: MintToken,
-        version: String
+        version: String,
+        refreshingRate: TimeInterval = 3
     ) {
         self.persistentStore = persistentStore
         self.chainProvider = chainProvider
         self.rpcClient = rpcClient
         self.mintToken = mintToken
         self.version = version
+        self.refreshingRate = refreshingRate
     }
     
     /// Start the service
     public func start() async throws {
+        // clean
+        clean()
+        
         // resume current session if any
         guard let session = await persistentStore.session,
               session.isValid
@@ -84,6 +93,9 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     public func createSession() async throws {
+        // clean
+        clean()
+        
         // create session
         let session = try LockAndMint.Session(createdAt: Date())
         
@@ -95,6 +107,12 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     // MARK: - Private
+    
+    /// Clean all current set up
+    private func clean() {
+        timer?.invalidate()
+    }
+    
     /// Resume the current session
     private func resume() async throws {
         // get account
@@ -117,5 +135,16 @@ public class LockAndMintServiceImpl: LockAndMintService {
         let response = try await lockAndMint.generateGatewayAddress()
         let address = try chain.dataToAddress(data: response.gatewayAddress)
         try await persistentStore.save(gatewayAddress: address)
+        
+        // observe incomming transactions
+        observeIncommingTransactions()
+    }
+    
+    /// Observe for new transactions
+    private func observeIncommingTransactions() {
+        timer = .scheduledTimer(withTimeInterval: refreshingRate, repeats: true) { [weak self] timer in
+            guard let self = self else { return }
+            
+        }
     }
 }
