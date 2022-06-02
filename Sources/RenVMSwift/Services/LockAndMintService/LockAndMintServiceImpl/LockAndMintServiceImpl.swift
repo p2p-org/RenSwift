@@ -119,6 +119,10 @@ public class LockAndMintServiceImpl: LockAndMintService {
         let address = try chain!.dataToAddress(data: gatewayAddressResponse!.gatewayAddress)
         try await persistentStore.save(gatewayAddress: address)
         
+        // continue previous works
+        let submitedTransaction = await persistentStore.processingTransactions.grouped().submited
+        try await submitIfNeededAndMint(submitedTransaction)
+        
         // observe incomming transactions
         observeIncommingTransactions()
     }
@@ -171,17 +175,17 @@ public class LockAndMintServiceImpl: LockAndMintService {
         
         // submit if needed and mint
         let processingTxs = await persistentStore.processingTransactions.filter {confirmedTxIds.contains($0.tx.txid)}
-        try await submitAndMint(processingTxs)
+        try await submitIfNeededAndMint(processingTxs)
     }
     
     /// Submit
-    func submitAndMint(_ txs: [LockAndMint.ProcessingTx]) async throws {
+    func submitIfNeededAndMint(_ txs: [LockAndMint.ProcessingTx]) async throws {
         
     }
     
     
     /// Submit
-    func submitAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
+    func submitIfNeededAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
         let account = try await chainProvider.getAccount()
         
         guard let response = gatewayAddressResponse,
