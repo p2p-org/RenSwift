@@ -233,9 +233,9 @@ public class LockAndMintServiceImpl: LockAndMintService {
         if tx.submitedAt == nil {
             do {
                 try Task.checkCancellation()
-                let signature = try await lockAndMint.submitMintTransaction(state: state)
+                let hash = try await lockAndMint.submitMintTransaction(state: state)
+                print("submited transaction with hash: \(hash)")
                 try await persistentStore.markAsSubmited(tx.tx, at: Date())
-                try await chain.waitForConfirmation(signature: signature)
             } catch {
                 debugPrint(error)
                 // try to mint event if error
@@ -243,17 +243,28 @@ public class LockAndMintServiceImpl: LockAndMintService {
         }
         
         // mint
-        do {
+        try Task.checkCancellation()
+        try await Task.retrying(
+            where: { error in
+                (error as? RenVMError) == .paramsMissing
+            },
+            maxRetryCount: .max,
+            retryDelay: 5
+        ) {
             try Task.checkCancellation()
-            _ = try await lockAndMint.mint(state: state, signer: account.secret)
-        } catch {
-            // other error
-            if !chain.isAlreadyMintedError(error) {
-                throw error
+            do {
+                _ = try await lockAndMint.mint(state: state, signer: account.secret)
+            } catch {
+                // other error
+                if !chain.isAlreadyMintedError(error) {
+                    throw error
+                }
+                
+                // already minted
             }
-            
-            // already minted
-        }
+        }.value
+        
+        
         try await persistentStore.markAsMinted(tx.tx, at: Date())
     }
 }
