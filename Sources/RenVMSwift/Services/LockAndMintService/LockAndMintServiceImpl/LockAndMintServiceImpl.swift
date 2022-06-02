@@ -26,9 +26,6 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Minting rate
     private let mintingRate: TimeInterval
     
-    /// Timer for observing incomming transaction
-    private var timer: Timer?
-    
     /// Response from gateway address
     private var gatewayAddressResponse: LockAndMint.GatewayAddressResponse?
     
@@ -38,8 +35,8 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Chain
     private var chain: RenVMChainType?
     
-    /// Task groups (for cancellation)
-    private var taskGroups = [ThrowingTaskGroup<Void, Error>]()
+    /// Tasks for cancellation
+    private var tasks = [Task<Void, Error>]()
     
     // MARK: - Initializers
     
@@ -100,8 +97,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     
     /// Clean all current set up
     private func clean() {
-        taskGroups.forEach {$0.cancelAll()}
-        timer?.invalidate()
+        tasks.forEach {$0.cancel()}
     }
     
     /// Resume the current session
@@ -127,22 +123,26 @@ public class LockAndMintServiceImpl: LockAndMintService {
         let address = try chain!.dataToAddress(data: gatewayAddressResponse!.gatewayAddress)
         try await persistentStore.save(gatewayAddress: address)
         
-        // continue previous works
-        let submitedTransaction = await persistentStore.processingTransactions.grouped().submited
-        try await submitIfNeededAndMint(submitedTransaction)
-        
-        // observe incomming transactions
-        observeIncommingTransactions()
-    }
-    
-    /// Observe for new transactions
-    private func observeIncommingTransactions() {
-        timer = .scheduledTimer(withTimeInterval: refreshingRate, repeats: true) { [weak self] timer in
-            Task { [weak self] in
-                try await self?.getIncommingTransactionsAndMint()
-            }
+        // continue previous works in a separated task
+        let previousTask = Task.detached { [weak self] in
+            guard let self = self else {return}
+            let submitedTransaction = await self.persistentStore.processingTransactions.grouped().submited
+            try await self.submitIfNeededAndMint(submitedTransaction)
         }
-        timer?.fire()
+        tasks.append(previousTask)
+        
+        // observe incomming transactions in a seprated task
+        let observingTask = Task.detached {
+            try await Task<Void, Error>.retrying(
+                where: {_ in true},
+                priority: .background,
+                maxRetryCount: .max,
+                retryDelay: 20
+            ) { [weak self] in
+                try await self?.getIncommingTransactionsAndMint()
+            }.value
+        }
+        tasks.append(observingTask)
     }
     
     /// Get incomming transactions and mint
@@ -189,7 +189,6 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Submit if needed and mint array of tx
     func submitIfNeededAndMint(_ txs: [LockAndMint.ProcessingTx]) async throws {
         try await withThrowingTaskGroup(of: Void.self) { [weak self] group in
-            self?.taskGroups.append(group)
             for tx in txs {
                 group.addTask { [weak self] in
                     try await self?.submitIfNeededAndMint(tx)
