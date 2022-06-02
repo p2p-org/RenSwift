@@ -11,15 +11,34 @@ public protocol LockAndMintService: AnyObject {
 
 /// PersistentStore to persist session
 public protocol LockAndMintServicePersistentStore {
+    // MARK: - Session
     /// Current working Session
     var session: LockAndMint.Session? { get async }
-    
-    /// CurrentGatewayAddress
-    var gatewayAddress: String? {get async}
     
     /// Save session
     func save(session: LockAndMint.Session) async throws
     
+    // MARK: - GatewayAddress
+    /// CurrentGatewayAddress
+    var gatewayAddress: String? { get async }
+    
     /// Save gateway address
     func save(gatewayAddress: String) async throws
+    
+    // MARK: - ProcessingTransaction
+    
+    /// Transaction which are being processed
+    var processingTransactions: LockAndMintProcessingTx { get async }
+    
+    /// Mark as received
+    func markAsReceived(processingTransaction: LockAndMintProcessingTx, at date: Date) async throws
+    
+    /// Mark as confimed
+    func markAsConfirmed(processingTransaction: LockAndMintProcessingTx, at date: Date) async throws
+    
+    /// Mark as submited
+    func markAsSubmited(processingTransaction: LockAndMintProcessingTx, at date: Date) async throws
+    
+    /// Mark as minted
+    func markAsMinted(processingTransaction: LockAndMintProcessingTx, at date: Date) async throws
 }
