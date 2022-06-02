@@ -48,7 +48,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         chainProvider: ChainProvider,
         rpcClient: RenVMRpcClientType,
         mintToken: MintToken,
-        version: String,
+        version: String = "1",
         refreshingRate: TimeInterval = 3,
         mintingRate: TimeInterval = 60
     ) {
