@@ -82,12 +82,12 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     /// Create new session
-    public func createSession() async throws {
+    public func createSession(endAt: Date?) async throws {
         // clean
         clean()
         
         // create session
-        let session = try LockAndMint.Session(createdAt: Date())
+        let session = try LockAndMint.Session(createdAt: Date(), endAt: endAt)
         
         // save session
         try await persistentStore.save(session: session)

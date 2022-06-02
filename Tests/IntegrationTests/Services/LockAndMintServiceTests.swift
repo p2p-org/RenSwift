@@ -3,15 +3,16 @@ import SolanaSwift
 import RenVMSwift
 
 class LockAndMintServiceTests: XCTestCase {
+    let persistentStore = UserDefaultLockAndMintServicePersistentStore(
+        userDefaultKeyForSession: "userDefaultKeyForSession",
+        userDefaultKeyForGatewayAddress: "userDefaultKeyForGatewayAddress",
+        userDefaultKeyForProcessingTransactions: "userDefaultKeyForProcessingTransactions"
+    )
     var service: LockAndMintService!
     
     override func setUp() async throws {
         service = LockAndMintServiceImpl(
-            persistentStore: UserDefaultLockAndMintServicePersistentStore(
-                userDefaultKeyForSession: "userDefaultKeyForSession",
-                userDefaultKeyForGatewayAddress: "userDefaultKeyForGatewayAddress",
-                userDefaultKeyForProcessingTransactions: "userDefaultKeyForProcessingTransactions"
-            ),
+            persistentStore: persistentStore,
             chainProvider: SolanaChainProvider(),
             rpcClient: renRPCClient,
             mintToken: .bitcoin,
@@ -24,7 +25,14 @@ class LockAndMintServiceTests: XCTestCase {
     }
     
     func testLockAndMintService() async throws {
-        try await service.createSession()
+        if let session = await persistentStore.session,
+           session.isValid
+        {
+            try await service.start()
+        } else {
+            try await service.createSession(endAt: Date().addingTimeInterval(60*60*24*365*3)) // 3 years
+        }
+        
         let expectation = XCTestExpectation(description: "Your expectation")
         wait(for: [expectation], timeout: 9999999999999)
     }

@@ -6,5 +6,11 @@ public protocol LockAndMintService: AnyObject {
     func start() async throws
     
     /// Create new session
-    func createSession() async throws
+    func createSession(endAt: Date?) async throws
+}
+
+extension LockAndMintService {
+    func createSession() async throws {
+        try await createSession(endAt: nil)
+    }
 }
