@@ -232,6 +232,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         // submit
         if tx.submitedAt == nil {
             do {
+                try Task.checkCancellation()
                 let signature = try await lockAndMint.submitMintTransaction(state: state)
                 try await persistentStore.markAsSubmited(tx.tx, at: Date())
                 try await chain.waitForConfirmation(signature: signature)
@@ -243,6 +244,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         
         // mint
         do {
+            try Task.checkCancellation()
             _ = try await lockAndMint.mint(state: state, signer: account.secret)
         } catch {
             // other error
