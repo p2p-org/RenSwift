@@ -1,0 +1,42 @@
+import XCTest
+import SolanaSwift
+import RenVMSwift
+
+class LockAndMintServiceTests: XCTestCase {
+    var service: LockAndMintService!
+    
+    override func setUp() async throws {
+        service = LockAndMintServiceImpl(
+            persistentStore: UserDefaultLockAndMintServicePersistentStore(
+                userDefaultKeyForSession: "userDefaultKeyForSession",
+                userDefaultKeyForGatewayAddress: "userDefaultKeyForGatewayAddress",
+                userDefaultKeyForProcessingTransactions: "userDefaultKeyForProcessingTransactions"
+            ),
+            chainProvider: SolanaChainProvider(),
+            rpcClient: renRPCClient,
+            mintToken: .bitcoin,
+            version: "1"
+        )
+    }
+    
+    override func tearDown() async throws {
+        service = nil
+    }
+    
+    func testLockAndMintService() async throws {
+        try await service.createSession()
+        let expectation = XCTestExpectation(description: "Your expectation")
+        wait(for: [expectation], timeout: 9999999999999)
+    }
+    
+}
+
+fileprivate let renNetwork: RenVMSwift.Network = .testnet
+fileprivate let solanaNetwork: SolanaSwift.Network = .devnet
+fileprivate let solanaURL = "https://api.devnet.solana.com"
+fileprivate let renRPCClient = RpcClient(network: renNetwork)
+fileprivate let endpoint = APIEndPoint(
+    address: solanaURL,
+    network: solanaNetwork
+)
+fileprivate let solanaAPIClient = JSONRPCAPIClient(endpoint: endpoint)

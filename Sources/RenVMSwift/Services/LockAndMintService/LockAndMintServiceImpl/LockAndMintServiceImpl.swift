@@ -43,7 +43,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     
     // MARK: - Initializers
     
-    init(
+    public init(
         persistentStore: LockAndMintServicePersistentStore,
         chainProvider: ChainProvider,
         rpcClient: RenVMRpcClientType,
@@ -142,6 +142,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 try await self?.getIncommingTransactionsAndMint()
             }
         }
+        timer?.fire()
     }
     
     /// Get incomming transactions and mint

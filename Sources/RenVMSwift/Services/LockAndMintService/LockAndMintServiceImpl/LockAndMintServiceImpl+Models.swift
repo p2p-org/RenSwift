@@ -5,7 +5,7 @@ extension LockAndMintServiceImpl {
         let name: String
         let symbol: String
         
-        public var bitcoin: MintToken {
+        public static var bitcoin: MintToken {
             .init(name: "Bitcoin", symbol: "BTC")
         }
     }

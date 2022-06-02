@@ -1,4 +1,5 @@
 import Foundation
+import LoggerSwift
 
 /// PersistentStore to persist current works
 public protocol LockAndMintServicePersistentStore {
@@ -41,15 +42,15 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     // MARK: - Properties
     
     /// Key to store session in UserDefaults
-    let userDefaultKeyForSession: String
+    private let userDefaultKeyForSession: String
     /// Key to store gateway address in UserDefaults
-    let userDefaultKeyForGatewayAddress: String
+    private let userDefaultKeyForGatewayAddress: String
     /// Key to store processingTransactions in UserDefaults
-    let userDefaultKeyForProcessingTransactions: String
+    private let userDefaultKeyForProcessingTransactions: String
     
     // MARK: - Initializer
     
-    init(
+    public init(
         userDefaultKeyForSession: String,
         userDefaultKeyForGatewayAddress: String,
         userDefaultKeyForProcessingTransactions: String
@@ -86,6 +87,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     }
     
     public func markAsReceived(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
+        Logger.log(event: .event, message: "Receive transaction with id: \(tx.txid), detail: \(tx)")
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, receivedAt: date))
@@ -110,6 +112,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     }
     
     public func markAsConfirmed(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
+        Logger.log(event: .event, message: "Transaction confirmed with id: \(tx.txid), detail: \(tx)")
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, confirmedAt: date))
@@ -121,6 +124,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     }
     
     public func markAsSubmited(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
+        Logger.log(event: .event, message: "Transaction submited with id: \(tx.txid), detail: \(tx)")
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, submitedAt: date))
@@ -132,6 +136,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     }
     
     public func markAsMinted(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
+        Logger.log(event: .event, message: "Transaction minted with id: \(tx.txid), detail: \(tx)")
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, mintedAt: date))
