@@ -1,41 +1,7 @@
 import Foundation
 
-/// Service that is responsible for LockAndMint action
-public protocol LockAndMintService: AnyObject {
-    /// Start the service
-    func start() async throws
-    
-    /// Create new session
-    func createSession() async throws
-}
-
-/// PersistentStore to persist session
-public protocol LockAndMintServicePersistentStore {
-    /// Current working Session
-    var session: LockAndMint.Session? { get async }
-    
-    /// CurrentGatewayAddress
-    var gatewayAddress: String? {get async}
-    
-    /// Save session
-    func save(session: LockAndMint.Session) async throws
-    
-    /// Save gateway address
-    func save(gatewayAddress: String) async throws
-}
-
 /// `LockAndMintService` implementation
 public class LockAndMintServiceImpl: LockAndMintService {
-    // MARK: - Nested type
-    public struct MintToken {
-        let name: String
-        let symbol: String
-        
-        public var bitcoin: MintToken {
-            .init(name: "Bitcoin", symbol: "BTC")
-        }
-    }
-    
     // MARK: - Dependencies
     
     /// PersistentStore for storing current work
@@ -46,6 +12,8 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// API Client for RenVM
     private let rpcClient: RenVMRpcClientType
     
+    // MARK: - Properties
+    
     /// Mint token
     private let mintToken: MintToken
     
@@ -55,18 +23,25 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Refreshing rate
     private let refreshingRate: TimeInterval
     
-    // MARK: - Properties
+    /// Minting rate
+    private let mintingRate: TimeInterval
+    
+    /// Timer for observing incomming transaction
     private var timer: Timer?
     
+    /// Response from gateway address
+    private var gatewayAddressResponse: LockAndMint.GatewayAddressResponse?
     
     // MARK: - Initializers
+    
     init(
         persistentStore: LockAndMintServicePersistentStore,
         chainProvider: ChainProvider,
         rpcClient: RenVMRpcClientType,
         mintToken: MintToken,
         version: String,
-        refreshingRate: TimeInterval = 3
+        refreshingRate: TimeInterval = 3,
+        mintingRate: TimeInterval = 60
     ) {
         self.persistentStore = persistentStore
         self.chainProvider = chainProvider
@@ -74,6 +49,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         self.mintToken = mintToken
         self.version = version
         self.refreshingRate = refreshingRate
+        self.mintingRate = mintingRate
     }
     
     /// Start the service
@@ -92,6 +68,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         try await resume()
     }
     
+    /// Create new session
     public func createSession() async throws {
         // clean
         clean()
@@ -133,6 +110,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         
         // save address
         let response = try await lockAndMint.generateGatewayAddress()
+        gatewayAddressResponse = response
         let address = try chain.dataToAddress(data: response.gatewayAddress)
         try await persistentStore.save(gatewayAddress: address)
         
@@ -143,8 +121,53 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Observe for new transactions
     private func observeIncommingTransactions() {
         timer = .scheduledTimer(withTimeInterval: refreshingRate, repeats: true) { [weak self] timer in
-            guard let self = self else { return }
+            Task { [weak self] in
+                try await self?.getIncommingTransactionsAndMint()
+            }
             
         }
     }
+    
+    /// Get incomming transactions and mint
+    private func getIncommingTransactionsAndMint() async throws {
+        guard let address = await persistentStore.gatewayAddress,
+              let response = gatewayAddressResponse
+        else { return }
+        
+        // get incomming transaction
+        guard let incommingTransactions = try? await self.rpcClient.getIncomingTransactions(address: address)
+        else {
+            return
+        }
+        
+        // detect action for each incomming transactions, save status for future use
+        for transaction in incommingTransactions {
+            // get marker date
+            var date = Date()
+            if let blocktime = transaction.status.blockTime {
+                date = Date(timeIntervalSince1970: TimeInterval(blocktime))
+            }
+
+            // for confirmed transaction, do submit
+            if transaction.status.confirmed {
+                // mark as confirmed
+                self.sessionStorage.processingTx(tx: tx, didConfirmAt: date)
+                
+                // submit
+                
+                // mint
+            }
+            
+            // for inconfirming transaction, mark as received and wait
+            else {
+                // mark as received
+                self.sessionStorage.processingTx(tx: tx, didReceiveAt: date)
+            }
+        }
+        
+    }
+    
+    
+    /// Submit and mint
+    
 }
