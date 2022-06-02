@@ -38,6 +38,9 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Chain
     private var chain: RenVMChainType?
     
+    /// Task groups (for cancellation)
+    private var taskGroups = [ThrowingTaskGroup<Void, Error>]()
+    
     // MARK: - Initializers
     
     init(
@@ -56,6 +59,10 @@ public class LockAndMintServiceImpl: LockAndMintService {
         self.version = version
         self.refreshingRate = refreshingRate
         self.mintingRate = mintingRate
+    }
+    
+    deinit {
+        clean()
     }
     
     /// Start the service
@@ -93,6 +100,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     
     /// Clean all current set up
     private func clean() {
+        taskGroups.forEach {$0.cancelAll()}
         timer?.invalidate()
     }
     
@@ -133,7 +141,6 @@ public class LockAndMintServiceImpl: LockAndMintService {
             Task { [weak self] in
                 try await self?.getIncommingTransactionsAndMint()
             }
-            
         }
     }
     
@@ -178,13 +185,32 @@ public class LockAndMintServiceImpl: LockAndMintService {
         try await submitIfNeededAndMint(processingTxs)
     }
     
-    /// Submit
+    /// Submit if needed and mint array of tx
     func submitIfNeededAndMint(_ txs: [LockAndMint.ProcessingTx]) async throws {
-        
+        try await withThrowingTaskGroup(of: Void.self) { [weak self] group in
+            self?.taskGroups.append(group)
+            for tx in txs {
+                group.addTask { [weak self] in
+                    try await self?.submitIfNeededAndMintRetrying(tx)
+                }
+            }
+            
+            for try await _ in group {}
+        }
     }
     
+    /// Submit if needed and mint tx retry forever
+    func submitIfNeededAndMintRetrying(_ tx: LockAndMint.ProcessingTx) async throws {
+        try await Task.retrying(
+            where: {_ in true},
+            maxRetryCount: .max,
+            retryDelay: 10
+        ) { [weak self] in
+            try await self?.submitIfNeededAndMint(tx)
+        }.value
+    }
     
-    /// Submit
+    /// Submit if needed and mint tx
     func submitIfNeededAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
         let account = try await chainProvider.getAccount()
         
@@ -228,5 +254,4 @@ public class LockAndMintServiceImpl: LockAndMintService {
         }
         try await persistentStore.markAsMinted(tx.tx, at: Date())
     }
-    
 }
