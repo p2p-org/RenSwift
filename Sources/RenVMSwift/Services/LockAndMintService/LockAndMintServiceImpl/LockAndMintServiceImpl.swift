@@ -145,7 +145,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         }
         
         // detect action for each incomming transactions, save status for future use
-        var confirmedTransactions = [LockAndMint.IncomingTransaction]()
+        var confirmedTxIds = [String]()
         for transaction in incommingTransactions {
             // get marker date
             var date = Date()
@@ -159,7 +159,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 try await persistentStore.markAsConfirmed(transaction, at: date)
                 
                 // save to submit
-                confirmedTransactions.append(transaction)
+                confirmedTxIds.append(transaction.txid)
             }
             
             // for inconfirming transaction, mark as received and wait
@@ -170,35 +170,59 @@ public class LockAndMintServiceImpl: LockAndMintService {
         }
         
         // submit if needed and mint
-        try await submitAndMint(confirmedTransactions)
+        let processingTxs = await persistentStore.processingTransactions.filter {confirmedTxIds.contains($0.tx.txid)}
+        try await submitAndMint(processingTxs)
+    }
+    
+    /// Submit
+    func submitAndMint(_ txs: [LockAndMint.ProcessingTx]) async throws {
+        
     }
     
     
     /// Submit
-    func submitAndMint(_ tx: LockAndMint.IncomingTransaction) async throws {
+    func submitAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
+        let account = try await chainProvider.getAccount()
+        
         guard let response = gatewayAddressResponse,
-              let lockAndMint = lockAndMint
+              let lockAndMint = lockAndMint,
+              let chain = chain
         else { throw RenVMError.unknown }
 
         // get state
         let state = try lockAndMint.getDepositState(
-            transactionHash: tx.txid,
-            txIndex: String(tx.vout),
-            amount: String(tx.value),
+            transactionHash: tx.tx.txid,
+            txIndex: String(tx.tx.vout),
+            amount: String(tx.tx.value),
             sendTo: response.sendTo,
             gHash: response.gHash,
             gPubkey: response.gPubkey
         )
         
         // submit
-        try await lockAndMint.submitMintTransaction(state: state)
+        if tx.submitedAt == nil {
+            do {
+                let signature = try await lockAndMint.submitMintTransaction(state: state)
+                try await persistentStore.markAsSubmited(tx.tx, at: Date())
+                try await chain.waitForConfirmation(signature: signature)
+            } catch {
+                debugPrint(error)
+                // try to mint event if error
+            }
+        }
         
-        // mark as submited
-        try await persistentStore.markAsSubmited(tx, at: Date())
-        
-        // wait for confirmation
-        try await chain?.waitForConfirmation(signature: <#T##String#>)
-        
+        // mint
+        do {
+            _ = try await lockAndMint.mint(state: state, signer: account.secret)
+        } catch {
+            // other error
+            if !chain.isAlreadyMintedError(error) {
+                throw error
+            }
+            
+            // already minted
+        }
+        try await persistentStore.markAsMinted(tx.tx, at: Date())
     }
     
 }

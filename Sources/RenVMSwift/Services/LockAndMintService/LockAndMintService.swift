@@ -28,7 +28,7 @@ public protocol LockAndMintServicePersistentStore {
     // MARK: - ProcessingTransaction
     
     /// Transaction which are being processed
-    var processingTransactions: LockAndMint.ProcessingTx { get async }
+    var processingTransactions: [LockAndMint.ProcessingTx] { get async }
     
     /// Mark as received
     func markAsReceived(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws

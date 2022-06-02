@@ -90,7 +90,9 @@ class LockAndMintTests: XCTestCase {
         )
         
         // Submit mint transaction
-        _ = try await lockAndMint.submitMintTransaction(state: state)
+        let tx = try await lockAndMint.submitMintTransaction(state: state)
+        
+        print("submitted tx: \(tx)")
         
         let result = try await Task<(amountOut: String?, signature: String), Error>.retrying(
             where: { error in

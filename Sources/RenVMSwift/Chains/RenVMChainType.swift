@@ -32,6 +32,10 @@ public protocol RenVMChainType {
     func waitForConfirmation(
         signature: String
     ) async throws
+    
+    func isAlreadyMintedError(
+        _ error: Error
+    ) -> Bool
 }
 
 extension RenVMChainType {
