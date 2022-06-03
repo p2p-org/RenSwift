@@ -17,21 +17,6 @@ public protocol BurnAndReleaseService {
     func burnAndRelease(recipient: String, amount: UInt64) async throws -> String
 }
 
-/// Persistent store for recovering transaction in case of failure
-public protocol BurnAndReleasePersistentStore {
-    /// Get last non released transactions for retrying
-    /// - Returns: Transactions that wasn't released last time
-    func getNonReleasedTransactions() -> [BurnAndRelease.BurnDetails]
-    
-    /// Persist non released transaction for retrying next time
-    /// - Parameter transaction: transaction to be persisted
-    func persistNonReleasedTransactions(_ transaction: BurnAndRelease.BurnDetails)
-    
-    /// Mark transaction as released
-    /// - Parameter transaction: transaction to be marked
-    func markAsReleased(_ transaction: BurnAndRelease.BurnDetails)
-}
-
 /// Implementation of BurnAndReleaseService
 public class BurnAndReleaseServiceImpl: BurnAndReleaseService {
     // MARK: - Nested type
@@ -115,14 +100,14 @@ public class BurnAndReleaseServiceImpl: BurnAndReleaseService {
             signer: account.secret
         )
         
-        persistentStore.persistNonReleasedTransactions(burnDetails)
+        await persistentStore.persistNonReleasedTransactions(burnDetails)
         
         if let chain = chain {
             try await chain.waitForConfirmation(signature: burnDetails.confirmedSignature)
         }
         let signature = try await release(burnDetails)
         
-        persistentStore.markAsReleased(burnDetails)
+        await persistentStore.markAsReleased(burnDetails)
         return signature
     }
     
@@ -140,7 +125,7 @@ public class BurnAndReleaseServiceImpl: BurnAndReleaseService {
     }
     
     private func releaseUnfinishedTxsFromPersistentStore() async throws {
-        let nonReleasedTransactions = persistentStore.getNonReleasedTransactions()
+        let nonReleasedTransactions = await persistentStore.getNonReleasedTransactions()
         try await withThrowingTaskGroup(of: Void.self) { group in
             for detail in nonReleasedTransactions {
                 group.addTask { [weak self] in
