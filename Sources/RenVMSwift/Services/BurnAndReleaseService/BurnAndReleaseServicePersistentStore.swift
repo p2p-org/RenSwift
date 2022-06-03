@@ -15,25 +15,25 @@ public protocol BurnAndReleasePersistentStore {
     func markAsReleased(_ transaction: BurnAndRelease.BurnDetails) async
 }
 
-actor RenVMBurnAndReleasePersistentStore: BurnAndReleasePersistentStore {
-    let userDefaultKeyForSubmitedBurnTransactions: String
+public actor UserDefaultsBurnAndReleasePersistentStore: BurnAndReleasePersistentStore {
+    private let userDefaultKeyForSubmitedBurnTransactions: String
     
-    init(userDefaultKeyForSubmitedBurnTransactions: String) {
+    public init(userDefaultKeyForSubmitedBurnTransactions: String) {
         self.userDefaultKeyForSubmitedBurnTransactions = userDefaultKeyForSubmitedBurnTransactions
     }
     
-    func getNonReleasedTransactions() -> [BurnAndRelease.BurnDetails] {
+    public func getNonReleasedTransactions() -> [BurnAndRelease.BurnDetails] {
         getFromUserDefault(key: userDefaultKeyForSubmitedBurnTransactions) ?? []
     }
 
-    func persistNonReleasedTransactions(_ details: BurnAndRelease.BurnDetails) {
+    public func persistNonReleasedTransactions(_ details: BurnAndRelease.BurnDetails) {
         var currentValue: [BurnAndRelease.BurnDetails] = getFromUserDefault(key: userDefaultKeyForSubmitedBurnTransactions) ?? []
         currentValue.removeAll(where: { $0.confirmedSignature == details.confirmedSignature })
         currentValue.append(details)
         saveToUserDefault(currentValue, key: userDefaultKeyForSubmitedBurnTransactions)
     }
 
-    func markAsReleased(_ details: BurnAndRelease.BurnDetails) {
+    public func markAsReleased(_ details: BurnAndRelease.BurnDetails) {
         var currentValue: [BurnAndRelease.BurnDetails] = getFromUserDefault(key: userDefaultKeyForSubmitedBurnTransactions) ?? []
         currentValue.removeAll(where: { $0.confirmedSignature == details.confirmedSignature })
         saveToUserDefault(currentValue, key: userDefaultKeyForSubmitedBurnTransactions)
