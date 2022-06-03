@@ -70,11 +70,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         self.showLog = showLog
     }
     
-    deinit {
-        Task {
-            await clean()
-        }
-    }
+    deinit {}
     
     /// Start the service
     public func resume() async throws {

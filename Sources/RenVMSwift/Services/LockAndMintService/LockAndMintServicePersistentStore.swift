@@ -239,7 +239,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     }
     
     private func clearFromUserDefault(key: String) {
-        UserDefaults.standard.setNilValueForKey(key)
+        UserDefaults.standard.removeObject(forKey: key)
     }
     
     private func save(_ modify: @escaping (inout [LockAndMint.ProcessingTx]) -> Bool) {
