@@ -50,7 +50,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         rpcClient: RenVMRpcClientType,
         mintToken: MintToken,
         version: String = "1",
-        refreshingRate: TimeInterval = 3,
+        refreshingRate: TimeInterval = 5,
         mintingRate: TimeInterval = 60,
         showLog: Bool
     ) {
@@ -140,9 +140,13 @@ public class LockAndMintServiceImpl: LockAndMintService {
         
         // observe incomming transactions in a seprated task
         let observingTask = Task.detached { [weak self] in
+            guard let self = self else {return}
             repeat {
-                try? await self?.getIncommingTransactionsAndMint()
-                try? await Task.sleep(nanoseconds: 20_000_000) // 5 seconds
+                if Task.isCancelled {
+                    return
+                }
+                try? await self.getIncommingTransactionsAndMint()
+                try? await Task.sleep(nanoseconds: 1_000_000_000 * UInt64(self.refreshingRate)) // 5 seconds
             } while true
         }
         tasks.append(observingTask)
@@ -170,8 +174,17 @@ public class LockAndMintServiceImpl: LockAndMintService {
 
             // for confirmed transaction, do submit
             if transaction.status.confirmed {
-                // mark as confirmed
-                await persistentStore.markAsConfirmed(transaction, at: date)
+                // check if transaction is invalid
+                if let tx = await persistentStore.processingTransactions.first(where: {$0.tx.txid == transaction.txid}),
+                   tx.validationStatus != .valid
+                {
+                    if showLog {
+                        Logger.log(event: .info, message: "Transaction \(transaction.txid) is being ignored because it is \(tx.validationStatus)")
+                    }
+                } else {
+                    // mark as confirmed
+                    await persistentStore.markAsConfirmed(transaction, at: date)
+                }
                 
                 // save to submit
                 confirmedTxIds.append(transaction.txid)

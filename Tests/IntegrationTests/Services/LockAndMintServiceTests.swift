@@ -27,12 +27,21 @@ class LockAndMintServiceTests: XCTestCase {
     }
     
     func testLockAndMintService() async throws {
+        print("Test is runing on thread: \(Thread.current)")
+        
         if let session = await persistentStore.session,
            session.isValid
         {
             try await service.resume()
         } else {
             try await service.createSession(endAt: Date().addingTimeInterval(60*60*24*365*3)) // 3 years
+        }
+        
+        // check if operation block the main queue
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            DispatchQueue.main.async {
+                print("Ping the ui thread \(Thread.current)")
+            }
         }
         
         let expectation = XCTestExpectation(description: "Your expectation")
