@@ -43,6 +43,10 @@ public protocol LockAndMintServicePersistentStore {
     
     /// Mark as invalid
     func markAsInvalid(txid: String, reason: String?) async
+    
+    // MARK: - Clearance
+    /// Clear all (expire current session)
+    func clearAll() async
 }
 
 /// Implementation of LockAndMintServicePersistentStore, using UserDefaults as storage
@@ -214,6 +218,12 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
     }
     
+    public func clearAll() {
+        clearFromUserDefault(key: userDefaultKeyForSession)
+        clearFromUserDefault(key: userDefaultKeyForGatewayAddress)
+        clearFromUserDefault(key: userDefaultKeyForProcessingTransactions)
+    }
+    
     // MARK: - Private
     
     private func getFromUserDefault<T: Decodable>(key: String) -> T? {
@@ -226,6 +236,10 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     private func saveToUserDefault<T: Encodable>(_ object: T, key: String) {
         guard let data = try? JSONEncoder().encode(object) else {return}
         UserDefaults.standard.set(data, forKey: key)
+    }
+    
+    private func clearFromUserDefault(key: String) {
+        UserDefaults.standard.setNilValueForKey(key)
     }
     
     private func save(_ modify: @escaping (inout [LockAndMint.ProcessingTx]) -> Bool) {

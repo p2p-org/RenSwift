@@ -107,6 +107,14 @@ public class LockAndMintServiceImpl: LockAndMintService {
         try await _resume()
     }
     
+    public func expireCurrentSession() async throws {
+        // clean
+        await clean()
+        
+        // clear
+        await persistentStore.clearAll()
+    }
+    
     // MARK: - Private
     
     /// Clean all current set up

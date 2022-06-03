@@ -14,6 +14,9 @@ public protocol LockAndMintService: AnyObject {
     
     /// Create new session
     func createSession(endAt: Date?) async throws
+    
+    /// expire session
+    func expireCurrentSession() async throws
 }
 
 extension LockAndMintService {
