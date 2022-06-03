@@ -24,7 +24,7 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift.git",
         "state": {
           "branch": "refactor/pwn-3297",
-          "revision": "905c7ad8278a478428c60719a6e9b294e0a30d83",
+          "revision": "47292f685ab7375bc1913e4d2888ebe504abd474",
           "version": null
         }
       },
