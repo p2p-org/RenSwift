@@ -34,6 +34,9 @@ public protocol LockAndMintServicePersistentStore {
     
     /// Mark as minted
     func markAsMinted(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
+    
+    /// Mark as invalid
+    func markAsInvalid(_ incomingTransaction: LockAndMint.IncomingTransaction, reason: String?) async throws
 }
 
 /// Implementation of LockAndMintServicePersistentStore, using UserDefaults as storage
@@ -87,7 +90,6 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     }
     
     public func markAsReceived(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
-        Logger.log(event: .event, message: "Receive transaction with id: \(tx.txid), detail: \(tx)")
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, receivedAt: date))
@@ -143,6 +145,18 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
                 return true
             }
             current[index].mintedAt = date
+            return true
+        }
+    }
+    
+    public func markAsInvalid(_ tx: LockAndMint.IncomingTransaction, reason: String?) async throws {
+        Logger.log(event: .error, message: "Transaction with id \(tx.txid) is marked as invalid, reason: \(reason ?? "nil")")
+        save { current in
+            guard let index = current.indexOf(tx) else {
+                current.append(.init(tx: tx, validationStatus: .invalid(reason: reason)))
+                return true
+            }
+            current[index].validationStatus = .invalid(reason: reason)
             return true
         }
     }

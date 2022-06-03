@@ -2,6 +2,11 @@ import Foundation
 
 extension LockAndMint {
     public struct ProcessingTx: Codable, Hashable {
+        public enum ValidationStatus: Codable, Hashable {
+            case valid
+            case invalid(reason: String?)
+        }
+        
         public static let maxVote: UInt64 = 3
         public var tx: LockAndMint.IncomingTransaction
         public var receivedAt: Date?
@@ -11,10 +16,7 @@ extension LockAndMint {
         public var confirmedAt: Date?
         public var submitedAt: Date?
         public var mintedAt: Date?
-
-        public var value: Double {
-            tx.value.convertToBalance(decimals: 8)
-        }
+        public var validationStatus: ValidationStatus = .valid
     }
 }
 

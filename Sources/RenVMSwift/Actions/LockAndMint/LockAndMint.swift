@@ -130,6 +130,10 @@ public struct LockAndMint {
         }
         let response = try await rpcClient.queryMint(txHash: txHash)
         
+        if let revert = response.tx.out.v.revert {
+            throw RenVMError(revert)
+        }
+        
         guard response.txStatus == "done" else {
             throw RenVMError.paramsMissing
         }
