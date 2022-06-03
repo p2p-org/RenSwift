@@ -23,6 +23,9 @@ public protocol LockAndMintServicePersistentStore {
     /// Transaction which are being processed
     var processingTransactions: [LockAndMint.ProcessingTx] { get async }
     
+    /// Mark as processing
+    func markAsProcessing(_ isProcessing: Bool, transaction: LockAndMint.ProcessingTx) async throws
+    
     /// Mark as received
     func markAsReceived(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
     
@@ -36,7 +39,7 @@ public protocol LockAndMintServicePersistentStore {
     func markAsMinted(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
     
     /// Mark as invalid
-    func markAsInvalid(_ incomingTransaction: LockAndMint.IncomingTransaction, reason: String?) async throws
+    func markAsInvalid(txid: String, reason: String?) async throws
 }
 
 /// Implementation of LockAndMintServicePersistentStore, using UserDefaults as storage
@@ -51,16 +54,21 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     /// Key to store processingTransactions in UserDefaults
     private let userDefaultKeyForProcessingTransactions: String
     
+    /// Flag to indicate whether show log or not
+    private let showLog: Bool
+    
     // MARK: - Initializer
     
     public init(
         userDefaultKeyForSession: String,
         userDefaultKeyForGatewayAddress: String,
-        userDefaultKeyForProcessingTransactions: String
+        userDefaultKeyForProcessingTransactions: String,
+        showLog: Bool
     ) {
         self.userDefaultKeyForSession = userDefaultKeyForSession
         self.userDefaultKeyForGatewayAddress = userDefaultKeyForGatewayAddress
         self.userDefaultKeyForProcessingTransactions = userDefaultKeyForProcessingTransactions
+        self.showLog = showLog
     }
     
     // MARK: - Session
@@ -89,6 +97,20 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         getFromUserDefault(key: userDefaultKeyForProcessingTransactions) ?? []
     }
     
+    public func markAsProcessing(_ isProcessing: Bool, transaction: LockAndMint.ProcessingTx) async throws {
+        save { current in
+            guard let index = current.indexOf(transaction.tx.txid) else {
+                return false
+            }
+            current[index].isProcessing = isProcessing
+            return true
+        }
+        
+        if showLog {
+            Logger.log(event: .request, message: "Transaction with id \(transaction.tx.txid), vout: \(transaction.tx.vout), isConfirmed: \(transaction.tx.status.confirmed), value: \(transaction.tx.value) is being processed")
+        }
+    }
+    
     public func markAsReceived(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
         save { current in
             guard let index = current.indexOf(tx) else {
@@ -111,10 +133,13 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
 
             return true
         }
+        
+        if showLog {
+            Logger.log(event: .event, message: "Received transaction with id \(tx.txid), vout: \(tx.vout), isConfirmed: \(tx.status.confirmed), value: \(tx.value)")
+        }
     }
     
     public func markAsConfirmed(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
-        Logger.log(event: .event, message: "Transaction confirmed with id: \(tx.txid), detail: \(tx)")
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, confirmedAt: date))
@@ -123,10 +148,13 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
             current[index].confirmedAt = date
             return true
         }
+        
+        if showLog {
+            Logger.log(event: .event, message: "Transaction with id \(tx.txid) has been confirmed, vout: \(tx.vout), value: \(tx.value)")
+        }
     }
     
     public func markAsSubmited(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
-        Logger.log(event: .event, message: "Transaction submited with id: \(tx.txid), detail: \(tx)")
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, submitedAt: date))
@@ -135,10 +163,13 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
             current[index].submitedAt = date
             return true
         }
+        
+        if showLog {
+            Logger.log(event: .event, message: "Transaction with id \(tx.txid) has been submited, value: \(tx.value)")
+        }
     }
     
     public func markAsMinted(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
-        Logger.log(event: .event, message: "Transaction minted with id: \(tx.txid), detail: \(tx)")
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, mintedAt: date))
@@ -147,17 +178,23 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
             current[index].mintedAt = date
             return true
         }
+        
+        if showLog {
+            Logger.log(event: .event, message: "Transaction with id \(tx.txid) has been minted, value: \(tx.value)")
+        }
     }
     
-    public func markAsInvalid(_ tx: LockAndMint.IncomingTransaction, reason: String?) async throws {
-        Logger.log(event: .error, message: "Transaction with id \(tx.txid) is marked as invalid, reason: \(reason ?? "nil")")
+    public func markAsInvalid(txid: String, reason: String?) async throws {
         save { current in
-            guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, validationStatus: .invalid(reason: reason)))
-                return true
+            guard let index = current.indexOf(txid) else {
+                return false
             }
             current[index].validationStatus = .invalid(reason: reason)
             return true
+        }
+        
+        if showLog {
+            Logger.log(event: .event, message: "Transaction with id \(txid) is invalid, reason: \(reason ?? "nil")")
         }
     }
     
@@ -191,5 +228,9 @@ private extension Array where Element == LockAndMint.ProcessingTx {
 
     func indexOf(_ tx: LockAndMint.IncomingTransaction) -> Int? {
         firstIndex(where: { $0.tx.txid == tx.txid })
+    }
+    
+    func indexOf(_ txid: String) -> Int? {
+        firstIndex(where: { $0.tx.txid == txid })
     }
 }

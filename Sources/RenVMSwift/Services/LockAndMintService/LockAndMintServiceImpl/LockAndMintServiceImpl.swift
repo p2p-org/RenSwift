@@ -1,4 +1,5 @@
 import Foundation
+import LoggerSwift
 
 /// `LockAndMintService` implementation
 public class LockAndMintServiceImpl: LockAndMintService {
@@ -26,6 +27,9 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Minting rate
     private let mintingRate: TimeInterval
     
+    /// Flag to indicate of whether log should be shown or not
+    private let showLog: Bool
+    
     /// Response from gateway address
     private var gatewayAddressResponse: LockAndMint.GatewayAddressResponse?
     
@@ -36,7 +40,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     private var chain: RenVMChainType?
     
     /// Tasks for cancellation
-    private var tasks = [Task<Void, Error>]()
+    private var tasks = [Task<Void, Never>]()
     
     // MARK: - Initializers
     
@@ -47,7 +51,8 @@ public class LockAndMintServiceImpl: LockAndMintService {
         mintToken: MintToken,
         version: String = "1",
         refreshingRate: TimeInterval = 3,
-        mintingRate: TimeInterval = 60
+        mintingRate: TimeInterval = 60,
+        showLog: Bool
     ) {
         self.persistentStore = persistentStore
         self.chainProvider = chainProvider
@@ -56,6 +61,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         self.version = version
         self.refreshingRate = refreshingRate
         self.mintingRate = mintingRate
+        self.showLog = showLog
     }
     
     deinit {
@@ -124,23 +130,17 @@ public class LockAndMintServiceImpl: LockAndMintService {
         try await persistentStore.save(gatewayAddress: address)
         
         // continue previous works in a separated task
-        let previousTask = Task.detached { [weak self] in
-            guard let self = self else {return}
-            let submitedTransaction = await self.persistentStore.processingTransactions.grouped().submited
-            try await self.submitIfNeededAndMint(submitedTransaction)
+        let previousTask = Task<Void, Never>.detached { [weak self] in
+            await self?.submitIfNeededAndMintAllTransactionsInQueue()
         }
         tasks.append(previousTask)
         
         // observe incomming transactions in a seprated task
-        let observingTask = Task.detached {
-            try await Task<Void, Error>.retrying(
-                where: {_ in true},
-                priority: .background,
-                maxRetryCount: .max,
-                retryDelay: 20
-            ) { [weak self] in
-                try await self?.getIncommingTransactionsAndMint()
-            }.value
+        let observingTask = Task.detached { [weak self] in
+            repeat {
+                try? await self?.getIncommingTransactionsAndMint()
+                try? await Task.sleep(nanoseconds: 20_000_000) // 5 seconds
+            } while true
         }
         tasks.append(observingTask)
     }
@@ -182,20 +182,41 @@ public class LockAndMintServiceImpl: LockAndMintService {
         }
         
         // submit if needed and mint
-        let processingTxs = await persistentStore.processingTransactions.filter {confirmedTxIds.contains($0.tx.txid)}
-        try await submitIfNeededAndMint(processingTxs)
+        await submitIfNeededAndMintAllTransactionsInQueue()
     }
     
     /// Submit if needed and mint array of tx
-    func submitIfNeededAndMint(_ txs: [LockAndMint.ProcessingTx]) async throws {
-        try await withThrowingTaskGroup(of: Void.self) { [weak self] group in
-            for tx in txs {
+    func submitIfNeededAndMintAllTransactionsInQueue() async {
+        // get all transactions that are valid and are not being processed
+        let groupedTransactions = await persistentStore.processingTransactions.grouped()
+        let confirmedAndSubmitedTransactions = groupedTransactions.confirmed + groupedTransactions.submited
+        let transactionsToBeProcessed = confirmedAndSubmitedTransactions.filter {$0.isProcessing == false}
+        
+        // mark as processing
+        for tx in transactionsToBeProcessed {
+            try? await persistentStore.markAsProcessing(true, transaction: tx)
+        }
+        
+        // process transactions simutaneously
+        await withTaskGroup(of: Void.self) { [weak self] group in
+            for tx in transactionsToBeProcessed {
                 group.addTask { [weak self] in
-                    try await self?.submitIfNeededAndMint(tx)
+                    guard let self = self else {return}
+                    do {
+                        try await self.submitIfNeededAndMint(tx)
+                    } catch let error as RenVMError {
+                        if error.message.starts(with: "insufficient amount after fees") {
+                            try? await self.persistentStore.markAsInvalid(txid: tx.tx.txid, reason: error.message)
+                        }
+                    } catch {
+                        if self.showLog {
+                            Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                        }
+                    }
                 }
             }
             
-            for try await _ in group {}
+            for await _ in group {}
         }
     }
     

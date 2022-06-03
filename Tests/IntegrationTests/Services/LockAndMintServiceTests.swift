@@ -6,7 +6,8 @@ class LockAndMintServiceTests: XCTestCase {
     let persistentStore = UserDefaultLockAndMintServicePersistentStore(
         userDefaultKeyForSession: "userDefaultKeyForSession",
         userDefaultKeyForGatewayAddress: "userDefaultKeyForGatewayAddress",
-        userDefaultKeyForProcessingTransactions: "userDefaultKeyForProcessingTransactions"
+        userDefaultKeyForProcessingTransactions: "userDefaultKeyForProcessingTransactions",
+        showLog: true
     )
     var service: LockAndMintService!
     
@@ -16,7 +17,8 @@ class LockAndMintServiceTests: XCTestCase {
             chainProvider: SolanaChainProvider(),
             rpcClient: renRPCClient,
             mintToken: .bitcoin,
-            version: "1"
+            version: "1",
+            showLog: true
         )
     }
     

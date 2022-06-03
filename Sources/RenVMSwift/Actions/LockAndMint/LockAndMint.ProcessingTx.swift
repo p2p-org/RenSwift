@@ -17,6 +17,7 @@ extension LockAndMint {
         public var submitedAt: Date?
         public var mintedAt: Date?
         public var validationStatus: ValidationStatus = .valid
+        public var isProcessing: Bool = false
     }
 }
 
