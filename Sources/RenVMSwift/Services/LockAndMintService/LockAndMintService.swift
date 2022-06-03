@@ -10,7 +10,7 @@ public protocol LockAndMintService: AnyObject {
 }
 
 extension LockAndMintService {
-    func createSession() async throws {
+    public func createSession() async throws {
         try await createSession(endAt: nil)
     }
 }
