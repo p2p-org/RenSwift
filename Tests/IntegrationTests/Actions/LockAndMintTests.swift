@@ -37,7 +37,7 @@ class LockAndMintTests: XCTestCase {
         let endAt = calendar.date(byAdding: .year, value: 3, to: createdAt)
         
         // Create session
-        let session = try Session(createdAt: createdAt, endAt: endAt)
+        let session = try LockAndMint.Session(createdAt: createdAt, endAt: endAt)
         
         // Initialize service
         let lockAndMint = try LockAndMint(
@@ -59,7 +59,7 @@ class LockAndMintTests: XCTestCase {
         XCTAssertEqual(address, "2N5crcCGWhn1LUkPpV2ttDKupUncAcXJ4yM")
         
         // Get stream infos, retry until a tx is confirmed
-        let streamInfos = try await Task<[IncomingTransaction], Error>.retrying(
+        let streamInfos = try await Task<[LockAndMint.IncomingTransaction], Error>.retrying(
             where: { error in
                 (error as? TestError) == .noStreamInfo
             },
@@ -90,7 +90,9 @@ class LockAndMintTests: XCTestCase {
         )
         
         // Submit mint transaction
-        _ = try await lockAndMint.submitMintTransaction(state: state)
+        let hash = try await lockAndMint.submitMintTransaction(state: state)
+        
+        print("submitted tx hash: \(hash)")
         
         let result = try await Task<(amountOut: String?, signature: String), Error>.retrying(
             where: { error in

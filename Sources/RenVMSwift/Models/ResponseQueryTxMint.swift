@@ -59,6 +59,7 @@ public struct ResponseQueryTxMint: Decodable {
                 let sighash: String?
                 let txid: String?
                 let txindex: String?
+                let revert: String?
             }
         }
     }

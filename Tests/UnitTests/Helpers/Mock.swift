@@ -35,7 +35,7 @@ struct Mock {
         func selectPublicKey(mintTokenSymbol: String) async throws -> Data? {
             Data(base64Encoded: "Aw3WX32ykguyKZEuP0IT3RUOX5csm3PpvnFNhEVhrDVc")
         }
-        func getIncomingTransactions(address: String) async throws -> [IncomingTransaction] {
+        func getIncomingTransactions(address: String) async throws -> [LockAndMint.IncomingTransaction] {
             fatalError()
         }
     }
@@ -178,6 +178,14 @@ struct Mock {
         }
         
         var endpoint: APIEndPoint {
+            fatalError()
+        }
+        
+        func getTransaction(signature: String, commitment: Commitment?) async throws -> TransactionInfo? {
+            fatalError()
+        }
+        
+        func batchRequest(with requests: [JSONRPCRequestEncoder.RequestType]) async throws -> [AnyResponse<JSONRPCRequestEncoder.RequestType.Entity>] {
             fatalError()
         }
     }

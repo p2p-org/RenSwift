@@ -9,6 +9,10 @@ public struct RenVMError: Swift.Error, Equatable, Decodable {
         self.code = nil
     }
     
+    public static var unauthorized: Self {
+        .init("Unauthorized")
+    }
+    
     public static var unknown: Self {
         .init("Unknown")
     }

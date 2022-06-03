@@ -280,6 +280,10 @@ public struct SolanaChain: RenVMChainType {
         try await apiClient.waitForConfirmation(signature: signature, ignoreStatus: true)
     }
     
+    public func isAlreadyMintedError(_ error: Error) -> Bool {
+        error.isAlreadyInUseSolanaError
+    }
+    
     // MARK: - Static methods
     public static func buildRenVMMessage(
         pHash: Data,
