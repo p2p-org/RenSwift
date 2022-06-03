@@ -65,13 +65,15 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     deinit {
-        clean()
+        Task {
+            await clean()
+        }
     }
     
     /// Start the service
     public func resume() async throws {
         // clean
-        clean()
+        await clean()
         
         // resume current session if any
         guard let session = await persistentStore.session,
@@ -87,13 +89,13 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Create new session
     public func createSession(endAt: Date?) async throws {
         // clean
-        clean()
+        await clean()
         
         // create session
         let session = try LockAndMint.Session(createdAt: Date(), endAt: endAt)
         
         // save session
-        try await persistentStore.save(session: session)
+        await persistentStore.save(session: session)
         
         // resume
         try await _resume()
@@ -102,7 +104,8 @@ public class LockAndMintServiceImpl: LockAndMintService {
     // MARK: - Private
     
     /// Clean all current set up
-    private func clean() {
+    private func clean() async {
+        await persistentStore.markAllTransactionsAsNotProcessing()
         tasks.forEach {$0.cancel()}
     }
     
@@ -127,7 +130,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         // save address
         gatewayAddressResponse = try await lockAndMint!.generateGatewayAddress()
         let address = try chain!.dataToAddress(data: gatewayAddressResponse!.gatewayAddress)
-        try await persistentStore.save(gatewayAddress: address)
+        await persistentStore.save(gatewayAddress: address)
         
         // continue previous works in a separated task
         let previousTask = Task<Void, Never>.detached { [weak self] in
@@ -168,7 +171,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
             // for confirmed transaction, do submit
             if transaction.status.confirmed {
                 // mark as confirmed
-                try await persistentStore.markAsConfirmed(transaction, at: date)
+                await persistentStore.markAsConfirmed(transaction, at: date)
                 
                 // save to submit
                 confirmedTxIds.append(transaction.txid)
@@ -177,7 +180,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
             // for inconfirming transaction, mark as received and wait
             else {
                 // mark as received
-                try await persistentStore.markAsReceived(transaction, at: date)
+                await persistentStore.markAsReceived(transaction, at: date)
             }
         }
         
@@ -190,11 +193,13 @@ public class LockAndMintServiceImpl: LockAndMintService {
         // get all transactions that are valid and are not being processed
         let groupedTransactions = await persistentStore.processingTransactions.grouped()
         let confirmedAndSubmitedTransactions = groupedTransactions.confirmed + groupedTransactions.submited
-        let transactionsToBeProcessed = confirmedAndSubmitedTransactions.filter {$0.isProcessing == false}
+        let transactionsToBeProcessed = confirmedAndSubmitedTransactions.filter {
+            $0.isProcessing == false && $0.validationStatus == .valid
+        }
         
         // mark as processing
         for tx in transactionsToBeProcessed {
-            try? await persistentStore.markAsProcessing(true, transaction: tx)
+            await persistentStore.markAsProcessing(tx)
         }
         
         // process transactions simutaneously
@@ -206,7 +211,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                         try await self.submitIfNeededAndMint(tx)
                     } catch let error as RenVMError {
                         if error.message.starts(with: "insufficient amount after fees") {
-                            try? await self.persistentStore.markAsInvalid(txid: tx.tx.txid, reason: error.message)
+                            await self.persistentStore.markAsInvalid(txid: tx.tx.txid, reason: error.message)
                         }
                     } catch {
                         if self.showLog {
@@ -245,7 +250,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 try Task.checkCancellation()
                 let hash = try await lockAndMint.submitMintTransaction(state: state)
                 print("submited transaction with hash: \(hash)")
-                try await persistentStore.markAsSubmited(tx.tx, at: Date())
+                await persistentStore.markAsSubmited(tx.tx, at: Date())
             } catch {
                 debugPrint(error)
                 // try to mint event if error
@@ -275,6 +280,6 @@ public class LockAndMintServiceImpl: LockAndMintService {
         }.value
         
         
-        try await persistentStore.markAsMinted(tx.tx, at: Date())
+        await persistentStore.markAsMinted(tx.tx, at: Date())
     }
 }

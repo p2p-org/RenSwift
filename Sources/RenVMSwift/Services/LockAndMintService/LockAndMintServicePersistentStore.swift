@@ -9,14 +9,14 @@ public protocol LockAndMintServicePersistentStore {
     var session: LockAndMint.Session? { get async }
     
     /// Save session
-    func save(session: LockAndMint.Session) async throws
+    func save(session: LockAndMint.Session) async
     
     // MARK: - GatewayAddress
     /// CurrentGatewayAddress
     var gatewayAddress: String? { get async }
     
     /// Save gateway address
-    func save(gatewayAddress: String) async throws
+    func save(gatewayAddress: String) async
     
     // MARK: - ProcessingTransaction
     
@@ -24,22 +24,25 @@ public protocol LockAndMintServicePersistentStore {
     var processingTransactions: [LockAndMint.ProcessingTx] { get async }
     
     /// Mark as processing
-    func markAsProcessing(_ isProcessing: Bool, transaction: LockAndMint.ProcessingTx) async throws
+    func markAsProcessing(_ transaction: LockAndMint.ProcessingTx) async
+    
+    /// Mark all transaction as not processing
+    func markAllTransactionsAsNotProcessing() async
     
     /// Mark as received
-    func markAsReceived(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
+    func markAsReceived(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async
     
     /// Mark as confimed
-    func markAsConfirmed(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
+    func markAsConfirmed(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async
     
     /// Mark as submited
-    func markAsSubmited(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
+    func markAsSubmited(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async
     
     /// Mark as minted
-    func markAsMinted(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async throws
+    func markAsMinted(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async
     
     /// Mark as invalid
-    func markAsInvalid(txid: String, reason: String?) async throws
+    func markAsInvalid(txid: String, reason: String?) async
 }
 
 /// Implementation of LockAndMintServicePersistentStore, using UserDefaults as storage
@@ -77,7 +80,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         getFromUserDefault(key: userDefaultKeyForSession)
     }
     
-    public func save(session: LockAndMint.Session) throws {
+    public func save(session: LockAndMint.Session) {
         saveToUserDefault(session, key: userDefaultKeyForSession)
     }
     
@@ -87,7 +90,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         getFromUserDefault(key: userDefaultKeyForGatewayAddress)
     }
     
-    public func save(gatewayAddress: String) throws {
+    public func save(gatewayAddress: String) {
         saveToUserDefault(gatewayAddress, key: userDefaultKeyForGatewayAddress)
     }
     
@@ -97,12 +100,12 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         getFromUserDefault(key: userDefaultKeyForProcessingTransactions) ?? []
     }
     
-    public func markAsProcessing(_ isProcessing: Bool, transaction: LockAndMint.ProcessingTx) async throws {
+    public func markAsProcessing(_ transaction: LockAndMint.ProcessingTx) {
         save { current in
             guard let index = current.indexOf(transaction.tx.txid) else {
                 return false
             }
-            current[index].isProcessing = isProcessing
+            current[index].isProcessing = true
             return true
         }
         
@@ -111,7 +114,20 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
     }
     
-    public func markAsReceived(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
+    public func markAllTransactionsAsNotProcessing() {
+        save { current in
+            for i in 0..<current.count {
+                current[i].isProcessing = false
+            }
+            return true
+        }
+        
+        if showLog {
+            Logger.log(event: .info, message: "All transactions has been removed from queue")
+        }
+    }
+    
+    public func markAsReceived(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, receivedAt: date))
@@ -139,7 +155,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
     }
     
-    public func markAsConfirmed(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
+    public func markAsConfirmed(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, confirmedAt: date))
@@ -154,7 +170,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
     }
     
-    public func markAsSubmited(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
+    public func markAsSubmited(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, submitedAt: date))
@@ -169,7 +185,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
     }
     
-    public func markAsMinted(_ tx: LockAndMint.IncomingTransaction, at date: Date) throws {
+    public func markAsMinted(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, mintedAt: date))
@@ -184,7 +200,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
     }
     
-    public func markAsInvalid(txid: String, reason: String?) async throws {
+    public func markAsInvalid(txid: String, reason: String?) {
         save { current in
             guard let index = current.indexOf(txid) else {
                 return false
