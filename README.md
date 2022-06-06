@@ -67,7 +67,7 @@ RenVMSwift is available through [CocoaPods](https://cocoapods.org). To install
 it, simply add the following line to your Podfile:
 
 ```ruby
-pod 'RenVMSwift'
+pod 'RenVMSwift', '~> 2.0.1'
 ```
 
 ## Author
