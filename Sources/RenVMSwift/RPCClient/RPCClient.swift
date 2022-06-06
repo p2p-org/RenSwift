@@ -112,11 +112,12 @@ public struct RpcClient: RenVMRpcClientType {
     }
     
     public func getIncomingTransactions(address: String) async throws -> [LockAndMint.IncomingTransaction] {
-        guard let url = URL(string: "https://blockstream.info\(network.isTestnet ? "/testnet": "")/api/address/\(address)/utxo")
+        let urlString = "https://blockstream.info\(network.isTestnet ? "/testnet": "")/api/address/\(address)/utxo"
+        guard let url = URL(string: urlString)
         else {
             throw RenVMError.invalidEndpoint
         }
-        Logger.log(event: .request, message: "https://blockstream.info/testnet/api/address/\(address)/utxo")
+        Logger.log(event: .request, message: urlString)
         let (data, _) = try await URLSession.shared.data(for: url)
         Logger.log(event: .response, message: String(data: data, encoding: .utf8) ?? "")
         return try JSONDecoder().decode([LockAndMint.IncomingTransaction].self, from: data)
