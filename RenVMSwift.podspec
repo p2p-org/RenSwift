@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'RenVMSwift'
-  s.version          = '1.0.1'
+  s.version          = '2.0.1'
   s.summary          = 'An implementation of RenVM written in PureSwift.'
 
 # This description is used to generate tags and improve search results.
@@ -28,7 +28,7 @@ Pod::Spec.new do |s|
   s.source           = { :git => 'https://github.com/p2p-org/RenSwift.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
-  s.ios.deployment_target = '12.0'
+  s.ios.deployment_target = '13.0'
 
   s.swift_version    = '5.5'
 
@@ -41,7 +41,6 @@ Pod::Spec.new do |s|
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
-  s.dependency 'RxAlamofire', '~> 6.1.1'
-  s.dependency 'SolanaSwift', '~> 1.3.5'
+  s.dependency 'SolanaSwift', '~> 2.0.1'
 end
 

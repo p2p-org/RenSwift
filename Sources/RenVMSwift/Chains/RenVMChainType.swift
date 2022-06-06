@@ -1,12 +1,4 @@
-//
-//  RenVMChainType.swift
-//  Action
-//
-//  Created by Chung Tran on 17/09/2021.
-//
-
 import Foundation
-import RxSwift
 
 public protocol RenVMChainType {
     var chainName: String {get}
@@ -26,8 +18,8 @@ public protocol RenVMChainType {
         address: Data,
         mintTokenSymbol: String,
         signer: Data,
-        responceQueryMint: RenVM.ResponseQueryTxMint
-    ) -> Single<String>
+        responceQueryMint: ResponseQueryTxMint
+    ) async throws -> String
     
     func submitBurn(
         mintTokenSymbol: String,
@@ -35,11 +27,19 @@ public protocol RenVMChainType {
         amount: String,
         recipient: String,
         signer: Data
-    ) -> Single<RenVM.BurnAndRelease.BurnDetails>
+    ) async throws -> BurnAndRelease.BurnDetails
+    
+    func waitForConfirmation(
+        signature: String
+    ) async throws
+    
+    func isAlreadyMintedError(
+        _ error: Error
+    ) -> Bool
 }
 
 extension RenVMChainType {
-    func selector(mintTokenSymbol: String, direction: RenVM.Selector.Direction) -> RenVM.Selector {
+    func selector(mintTokenSymbol: String, direction: Selector.Direction) -> Selector {
         .init(mintTokenSymbol: mintTokenSymbol, chainName: chainName, direction: direction)
     }
 }
