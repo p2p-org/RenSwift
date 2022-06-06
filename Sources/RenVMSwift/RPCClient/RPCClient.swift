@@ -112,7 +112,7 @@ public struct RpcClient: RenVMRpcClientType {
     }
     
     public func getIncomingTransactions(address: String) async throws -> [LockAndMint.IncomingTransaction] {
-        guard let url = URL(string: "https://blockstream.info/testnet/api/address/\(address)/utxo")
+        guard let url = URL(string: "https://blockstream.info\(network.isTestnet ? "/testnet": "")/api/address/\(address)/utxo")
         else {
             throw RenVMError.invalidEndpoint
         }
