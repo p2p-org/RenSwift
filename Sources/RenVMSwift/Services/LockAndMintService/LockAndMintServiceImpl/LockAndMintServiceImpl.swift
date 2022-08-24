@@ -116,14 +116,14 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Clean all current set up
     private func clean() async {
         await persistentStore.markAllTransactionsAsNotProcessing()
-        delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+        await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
         tasks.forEach {$0.cancel()}
     }
     
     /// Resume the current session
     private func _resume() async throws {
         // loading
-        delegate?.lockAndMintServiceWillStartLoading(self)
+        await delegate?.lockAndMintServiceWillStartLoading(self)
         isLoading = true
         
         do {
@@ -168,12 +168,12 @@ public class LockAndMintServiceImpl: LockAndMintService {
             tasks.append(observingTask)
             
             // loaded
-            delegate?.lockAndMintService(self, didLoadWithGatewayAddress: address)
+            await delegate?.lockAndMintService(self, didLoadWithGatewayAddress: address)
             isLoading = false
             
         } catch {
             // indicate error
-            delegate?.lockAndMintService(self, didFailToLoadWithError: error)
+            await delegate?.lockAndMintService(self, didFailToLoadWithError: error)
             isLoading = false
         }
     }
@@ -210,7 +210,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 } else {
                     // mark as confirmed
                     await persistentStore.markAsConfirmed(transaction, at: date)
-                    delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+                    await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
                 }
                 
                 // save to submit
@@ -221,7 +221,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
             else {
                 // mark as received
                 await persistentStore.markAsReceived(transaction, at: date)
-                delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+                await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
             }
         }
         
@@ -241,7 +241,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         // mark as processing
         for tx in transactionsToBeProcessed {
             await persistentStore.markAsProcessing(tx)
-            delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+            await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
         }
         
         // process transactions simutaneously
@@ -254,7 +254,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                     } catch let error as RenVMError {
                         if error.message.starts(with: "insufficient amount after fees") {
                             await self.persistentStore.markAsInvalid(txid: tx.tx.txid, reason: error.message)
-                            self.delegate?.lockAndMintService(self, didUpdateTransactions: await self.persistentStore.processingTransactions)
+                            await self.delegate?.lockAndMintService(self, didUpdateTransactions: await self.persistentStore.processingTransactions)
                         }
                     } catch {
                         if self.showLog {
@@ -294,7 +294,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 let hash = try await lockAndMint.submitMintTransaction(state: state)
                 print("submited transaction with hash: \(hash)")
                 await persistentStore.markAsSubmited(tx.tx, at: Date())
-                delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+                await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
             } catch {
                 debugPrint(error)
                 // try to mint event if error
@@ -325,6 +325,6 @@ public class LockAndMintServiceImpl: LockAndMintService {
         
         
         await persistentStore.markAsMinted(tx.tx, at: Date())
-        delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+        await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
     }
 }

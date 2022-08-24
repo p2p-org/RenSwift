@@ -5,16 +5,16 @@ public protocol LockAndMintServiceDelegate: AnyObject {
     
     // MARK: - Loading
     /// Start loading
-    func lockAndMintServiceWillStartLoading(_ lockAndMintService: LockAndMintService)
+    @MainActor func lockAndMintServiceWillStartLoading(_ lockAndMintService: LockAndMintService)
     
     /// Loaded
-    func lockAndMintService(_ lockAndMintService: LockAndMintService, didLoadWithGatewayAddress gatewayAddress: String)
+    @MainActor func lockAndMintService(_ lockAndMintService: LockAndMintService, didLoadWithGatewayAddress gatewayAddress: String)
     
     /// Stop loading with error
-    func lockAndMintService(_ lockAndMintService: LockAndMintService, didFailToLoadWithError error: Error)
+    @MainActor func lockAndMintService(_ lockAndMintService: LockAndMintService, didFailToLoadWithError error: Error)
     
     // MARK: - Transaction events
     
     /// Transactions updated
-    func lockAndMintService(_ lockAndMintService: LockAndMintService, didUpdateTransactions transactions: [LockAndMint.ProcessingTx])
+    @MainActor func lockAndMintService(_ lockAndMintService: LockAndMintService, didUpdateTransactions transactions: [LockAndMint.ProcessingTx])
 }
