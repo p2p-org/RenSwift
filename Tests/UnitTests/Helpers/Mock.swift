@@ -41,6 +41,10 @@ struct Mock {
     }
     
     struct SolanaAPIClient: SolanaSwift.SolanaAPIClient {
+        func request<Entity>(method: String, params: [Encodable]) async throws -> Entity where Entity : Decodable {
+            fatalError()
+        }
+        
         func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
             let dataString: String
             switch T.self {
