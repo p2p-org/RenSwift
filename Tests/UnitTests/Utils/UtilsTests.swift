@@ -17,6 +17,6 @@ class UtilsTests: XCTestCase {
     
     func testLegacyBTCAddressToBytes() throws {
         let bytes = try BurnAndRelease.addressToBytes(address: "3NFurmHWtPr2YAkpRLkk33mrKjv4ofbmEn")
-        XCTAssertEqual("0x" + bytes.hexString, "0x052edf71fdbaf59efaffd77362773eff")
+        XCTAssertEqual("0x" + bytes.hexString, "0x05e19b2df1e35c6dbabe144f0ef53ffa97ac4db025ce0f72ff")
     }
 }
