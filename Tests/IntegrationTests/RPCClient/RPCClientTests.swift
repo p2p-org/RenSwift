@@ -20,4 +20,10 @@ class RPCClientTests: XCTestCase {
         let result = try await rpcClient.getIncomingTransactions(address: "2N5crcCGWhn1LUkPpV2ttDKupUncAcXJ4yM")
         print(result)
     }
+    
+    func testEstimateTransactionFee() async throws {
+        let rpcClient = RpcClient(network: .mainnet)
+        let result = try await rpcClient.estimateTransactionFee(log: true)
+        print(result)
+    }
 }

@@ -17,6 +17,14 @@ public extension RenVMRpcClientType {
     func queryBlockState(log: Bool = false) async throws -> ResponseQueryBlockState {
         try await call(endpoint: network.lightNode, method: "ren_queryBlockState", params: emptyParams, log: log)
     }
+    
+    func estimateTransactionFee(log: Bool = false) async throws -> UInt64? {
+        let queryBlockState = try await queryBlockState(log: log)
+        guard let gasLimit = UInt64(queryBlockState.state.v.btc.gasLimit),
+              let gasCap = UInt64(queryBlockState.state.v.btc.gasCap)
+        else { return nil }
+        return gasLimit * gasCap
+    }
 
     func queryConfig() async throws -> ResponseQueryConfig {
         try await call(endpoint: network.lightNode, method: "ren_queryConfig", params: emptyParams, log: true)
