@@ -10,8 +10,13 @@ class UtilsTests: XCTestCase {
         XCTAssertEqual("CDsK2CsmBnLqupzsv9EeDHwc5ZYQxXt9LKzpkmusasc5z2LdDiKHqnCXpiCZTEXDYZtP7JgY4Ur9fkAU5RWSwxrnn", Base58.encode(data!.bytes))
     }
     
-    func testAddressToBytes() throws {
+    func testBTCAddressToBytes() throws {
         let bytes = try BurnAndRelease.addressToBytes(address: "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt")
         XCTAssertEqual("0x" + bytes.hexString, "0x00ff9da567e62f30ea8654fa1d5fbd47bef8e3be13")
+    }
+    
+    func testLegacyBTCAddressToBytes() throws {
+        let bytes = try BurnAndRelease.addressToBytes(address: "3NFurmHWtPr2YAkpRLkk33mrKjv4ofbmEn")
+        XCTAssertEqual("0x" + bytes.hexString, "0x052edf71fdbaf59efaffd77362773eff")
     }
 }
