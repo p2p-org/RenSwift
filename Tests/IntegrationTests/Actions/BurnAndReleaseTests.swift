@@ -28,7 +28,10 @@ class BurnAndReleaseTests: XCTestCase {
             phrase: "matter outer client aspect pear cigar caution robust easily merge dwarf wide short sail unusual indicate roast giraffe clay meat crowd exile curious vibrant".components(separatedBy: " "),
             network: solanaNetwork
         )
-        let recipient = "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt"
+        
+        let recipient = "tb1ql7w62elx9ucw4pj5lgw4l028hmuw80sndtntxt" // bech32 address
+//        let recipient = "mohjSavDdQYHRYXcS3uS6ttaHP8amyvX78" // legacy address
+        
         let amount = 0.0001.toLamport(decimals: 6) // 0.0001 renBTC
 
         let burnAndRelease = BurnAndRelease(

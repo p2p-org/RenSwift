@@ -120,14 +120,21 @@ public struct BurnAndRelease {
     }
     
     static func addressToBytes(address: String) throws -> Data {
-        let bech32 = try Bech32().decode(address).checksum
-        let type = bech32[0]
-        let words = Data(bech32[1...])
-        let fromWords = try convert(data: words, inBits: 5, outBits: 8, pad: false)
-        var data = Data()
-        data += [type]
-        data += fromWords
-        return data
+        // For new btc address type Bech32
+        if let bech32 = (try? Bech32().decode(address).checksum) {
+            let type = bech32[0]
+            let words = Data(bech32[1...])
+            let fromWords = try convert(data: words, inBits: 5, outBits: 8, pad: false)
+            var data = Data()
+            data += [type]
+            data += fromWords
+            return data
+        }
+        
+        // For legacy bitcoin address type P2PKH or P2SH
+        else {
+            return Data(Base58.decode(address))
+        }
     }
     
 }
