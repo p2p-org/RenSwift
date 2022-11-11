@@ -37,7 +37,7 @@ public struct BurnAndRelease {
         account: Data,
         amount: String,
         recipient: String,
-        signer: Data
+        signer: Data?
     ) async throws -> BurnDetails {
         try await chain.submitBurn(
             mintTokenSymbol: mintTokenSymbol,

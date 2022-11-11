@@ -101,7 +101,11 @@ class LockAndMintTests: XCTestCase {
             maxRetryCount: .max,
             retryDelay: 5
         ) {
-            try await lockAndMint.mint(state: state, signer: self.account.secretKey)
+            try await lockAndMint.mint(
+                state: state,
+                payerPubkey: self.account.publicKey.base58EncodedString,
+                payerSecretKey: self.account.secretKey
+            )
         }.value
 
         print(result)

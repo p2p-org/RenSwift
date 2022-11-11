@@ -104,7 +104,8 @@ public struct SolanaChain: RenVMChainType {
     public func submitMint(
         address: Data,
         mintTokenSymbol: String,
-        signer secretKey: Data,
+        payerPubkey: String,
+        payerSecretKey: Data?,
         responceQueryMint: ResponseQueryTxMint
     ) async throws -> String {
         guard let pHash = responceQueryMint.valueIn.phash.decodeBase64URL(),
@@ -140,10 +141,9 @@ public struct SolanaChain: RenVMChainType {
             nHash: nHash
         )
         let mintLogAccount: PublicKey = try .findProgramAddress(seeds: [renVMMessage.keccak256], programId: program).0
-        let signer = try Account(secretKey: secretKey)
         
         let mintInstruction = RenProgram.mintInstruction(
-            account: signer.publicKey,
+            account: try PublicKey(string: payerPubkey),
             gatewayAccount: gatewayAccountId,
             tokenMint: tokenMint,
             recipientTokenAccount: recipientTokenAccount,
@@ -167,13 +167,22 @@ public struct SolanaChain: RenVMChainType {
             recoveryId: sig[64] - 27
         )
         
+        let signer: Account?
+        if let secretKey = payerSecretKey {
+            signer = try Account(secretKey: secretKey)
+        } else {
+            signer = nil
+        }
+        
+        let signers = signer == nil ? []: [signer!]
+        
         let preparedTransaction = try await blockchainClient.prepareTransaction(
             instructions: [
                 mintInstruction,
                 secpInstruction
             ],
-            signers: [signer],
-            feePayer: signer.publicKey,
+            signers: signers,
+            feePayer: try PublicKey(string: payerPubkey),
             feeCalculator: nil
         )
         return try await blockchainClient.sendTransaction(
@@ -186,12 +195,11 @@ public struct SolanaChain: RenVMChainType {
         account: Data,
         amount amountString: String,
         recipient: String,
-        signer: Data
+        signer: Data?
     ) async throws -> BurnAndRelease.BurnDetails {
         guard let amount = UInt64(amountString) else {
             throw RenVMError("Amount is not valid")
         }
-        let signer = try Account(secretKey: signer)
         let account = try PublicKey(data: account)
         let program = try resolveTokenGatewayContract(mintTokenSymbol: mintTokenSymbol)
         let tokenMint = try getSPLTokenPubkey(mintTokenSymbol: mintTokenSymbol)
@@ -230,13 +238,14 @@ public struct SolanaChain: RenVMChainType {
             programId: program
         )
         
+        let signers = signer == nil ? []: [try Account(secretKey: signer!)]
         let preparedTransaction = try await blockchainClient.prepareTransaction(
             instructions: [
                 burnCheckedInstruction,
                 burnInstruction
             ],
-            signers: [signer],
-            feePayer: signer.publicKey,
+            signers: signers,
+            feePayer: account,
             feeCalculator: nil
         )
         

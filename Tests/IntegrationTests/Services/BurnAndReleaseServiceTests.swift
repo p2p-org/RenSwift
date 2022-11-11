@@ -46,7 +46,7 @@ fileprivate let endpoint = APIEndPoint(
 fileprivate let solanaAPIClient = JSONRPCAPIClient(endpoint: endpoint)
 
 class SolanaChainProvider: ChainProvider {
-    func getAccount() async throws -> (publicKey: Data, secret: Data) {
+    func getAccount() async throws -> (publicKey: Data, secret: Data?) {
         let account = try await Account(
             phrase: "matter outer client aspect pear cigar caution robust easily merge dwarf wide short sail unusual indicate roast giraffe clay meat crowd exile curious vibrant".components(separatedBy: " "),
             network: solanaNetwork
@@ -60,6 +60,10 @@ class SolanaChainProvider: ChainProvider {
             apiClient: solanaAPIClient,
             blockchainClient: BlockchainClient(apiClient: solanaAPIClient)
         )
+    }
+    
+    func convertPublicKeyDataToString(_ publicKey: Data) throws -> String {
+        try PublicKey(data: publicKey).base58EncodedString
     }
 }
 

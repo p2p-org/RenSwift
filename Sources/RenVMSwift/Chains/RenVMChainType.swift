@@ -17,7 +17,8 @@ public protocol RenVMChainType {
     func submitMint(
         address: Data,
         mintTokenSymbol: String,
-        signer: Data,
+        payerPubkey: String,
+        payerSecretKey: Data?,
         responceQueryMint: ResponseQueryTxMint
     ) async throws -> String
     
@@ -26,7 +27,7 @@ public protocol RenVMChainType {
         account: Data,
         amount: String,
         recipient: String,
-        signer: Data
+        signer: Data?
     ) async throws -> BurnAndRelease.BurnDetails
     
     func waitForConfirmation(

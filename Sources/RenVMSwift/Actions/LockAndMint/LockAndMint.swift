@@ -124,7 +124,11 @@ public struct LockAndMint {
         return hash
     }
     
-    public func mint(state: State, signer: Data) async throws -> (amountOut: String?, signature: String) {
+    public func mint(
+        state: State,
+        payerPubkey: String,
+        payerSecretKey: Data?
+    ) async throws -> (amountOut: String?, signature: String) {
         guard let txHash = state.txHash else {
             throw RenVMError("txHash not found")
         }
@@ -143,7 +147,8 @@ public struct LockAndMint {
         let signature = try await chain.submitMint(
             address: self.destinationAddress,
             mintTokenSymbol: self.mintTokenSymbol,
-            signer: signer,
+            payerPubkey: payerPubkey,
+            payerSecretKey: payerSecretKey,
             responceQueryMint: response
         )
         

@@ -309,10 +309,15 @@ public class LockAndMintServiceImpl: LockAndMintService {
             },
             maxRetryCount: .max,
             retryDelay: 5
-        ) {
+        ) { [weak self] in
+            guard let self = self else {throw CancellationError()}
             try Task.checkCancellation()
             do {
-                _ = try await lockAndMint.mint(state: state, signer: account.secret)
+                _ = try await lockAndMint.mint(
+                    state: state,
+                    payerPubkey: try self.chainProvider.convertPublicKeyDataToString(account.publicKey),
+                    payerSecretKey: account.secret
+                )
             } catch {
                 // other error
                 if !chain.isAlreadyMintedError(error) {
