@@ -117,7 +117,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     /// Get current gateway address
-    public func getGatewayAddress() async throws -> String? {
+    public func getCurrentGatewayAddress() throws -> String? {
         guard let chain = chain, let data = stateSubject.value.response?.gatewayAddress else {return nil}
         return try chain.dataToAddress(data: data)
     }
