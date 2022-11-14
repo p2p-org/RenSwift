@@ -15,6 +15,15 @@ public enum LockAndMintServiceState {
         }
     }
     
+    public var isLoading: Bool {
+        switch self {
+        case .loading:
+            return true
+        default:
+            return false
+        }
+    }
+    
     public func gatewayAddress(chain: RenVMChainType) throws -> String? {
         switch self {
         case .loaded(let response, _):
