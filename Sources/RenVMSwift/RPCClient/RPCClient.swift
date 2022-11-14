@@ -18,11 +18,13 @@ public extension RenVMRpcClientType {
         try await call(endpoint: network.lightNode, method: "ren_queryBlockState", params: emptyParams, log: log)
     }
     
-    func estimateTransactionFee(log: Bool = false) async throws -> UInt64? {
+    func estimateTransactionFee(log: Bool = false) async throws -> UInt64 {
         let queryBlockState = try await queryBlockState(log: log)
         guard let gasLimit = UInt64(queryBlockState.state.v.btc.gasLimit),
               let gasCap = UInt64(queryBlockState.state.v.btc.gasCap)
-        else { return nil }
+        else {
+            throw RenVMError("Could not estimate transaction fee")
+        }
         return gasLimit * gasCap
     }
 

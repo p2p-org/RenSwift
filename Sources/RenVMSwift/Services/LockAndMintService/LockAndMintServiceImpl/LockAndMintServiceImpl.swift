@@ -31,9 +31,6 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Flag to indicate of whether log should be shown or not
     private let showLog: Bool
     
-    /// Response from gateway address
-    private var gatewayAddressResponse: LockAndMint.GatewayAddressResponse?
-    
     /// Loaded lockAndMint
     private var lockAndMint: LockAndMint?
     
@@ -155,13 +152,17 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 session: await persistentStore.session
             )
             
-            // save address
-            gatewayAddressResponse = try await lockAndMint!.generateGatewayAddress()
-            let address = try chain!.dataToAddress(data: gatewayAddressResponse!.gatewayAddress)
+            // get response and estimated fee
+            let (gatewayAddressResponse, estimatedFee) = await(
+                try lockAndMint!.generateGatewayAddress(),
+                try rpcClient.estimateTransactionFee(log: showLog)
+            )
+            
+            let address = try chain!.dataToAddress(data: gatewayAddressResponse.gatewayAddress)
             await persistentStore.save(gatewayAddress: address)
             
             // notify
-            stateSubject.send(.loaded(gatewayAddress: address))
+            stateSubject.send(.loaded(response: gatewayAddressResponse, estimatedTransactionFee: estimatedFee))
             
             // continue previous works in a separated task
             let previousTask = Task<Void, Never>.detached { [weak self] in
@@ -280,6 +281,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                         // notify
                         await self.updateProcessingTransactions()
                     } catch {
+                        print(error)
                         if self.showLog {
                             Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
                         }
@@ -301,7 +303,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         // get infos
         let account = try await chainProvider.getAccount()
         
-        guard let response = gatewayAddressResponse,
+        guard let response = stateSubject.value.response,
               let lockAndMint = lockAndMint,
               let chain = chain
         else { throw RenVMError.unknown }

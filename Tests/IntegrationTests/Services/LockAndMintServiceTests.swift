@@ -31,6 +31,7 @@ class LockAndMintServiceTests: XCTestCase {
     func testLockAndMintService() async throws {
         // Observe state
         service.statePublisher
+            .receive(on: RunLoop.main)
             .sink { state in
                 print("service state: ", state)
             }
