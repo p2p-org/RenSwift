@@ -107,12 +107,19 @@ public class LockAndMintServiceImpl: LockAndMintService {
         try await _resume()
     }
     
+    /// Expire current session
     public func expireCurrentSession() async throws {
         // clean
         await clean()
         
         // clear
         await persistentStore.clearAll()
+    }
+    
+    /// Get current gateway address
+    public func getGatewayAddress() async throws -> String? {
+        guard let chain = chain, let data = stateSubject.value.response?.gatewayAddress else {return nil}
+        return try chain.dataToAddress(data: data)
     }
     
     // MARK: - Private

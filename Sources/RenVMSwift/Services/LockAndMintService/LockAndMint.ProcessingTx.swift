@@ -76,6 +76,10 @@ extension LockAndMint {
             public var lastVoteAt: Date? {
                 voteAt.keys.max() != nil ? voteAt[voteAt.keys.max()!]: nil
             }
+            
+            public var firstReceivedAt: Date? {
+                voteAt.keys.min() != nil ? voteAt[voteAt.keys.min()!]: nil
+            }
         }
     }
 }

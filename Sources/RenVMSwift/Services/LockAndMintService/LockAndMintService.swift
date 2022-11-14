@@ -17,6 +17,9 @@ public protocol LockAndMintService: AnyObject {
     
     /// expire session
     func expireCurrentSession() async throws
+    
+    /// get gateway address
+    func getGatewayAddress() async throws -> String?
 }
 
 extension LockAndMintService {
