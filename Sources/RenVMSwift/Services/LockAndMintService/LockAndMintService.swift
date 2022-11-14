@@ -1,13 +1,13 @@
 import Foundation
+import Combine
 
 /// Service that is responsible for LockAndMint action
 public protocol LockAndMintService: AnyObject {
+    /// State
+    var statePublisher: AnyPublisher<LockAndMintServiceState, Never> { get }
     
-    /// Is loading
-    var isLoading: Bool { get }
-    
-    /// Delegate
-    var delegate: LockAndMintServiceDelegate? { get set }
+    /// processing tx
+    var processingTxsPublisher: AnyPublisher<[LockAndMint.ProcessingTx], Never> { get }
     
     /// Resume the service
     func resume() async throws
