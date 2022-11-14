@@ -15,7 +15,7 @@ public enum LockAndMintServiceState {
         }
     }
     
-    func gatewayAddress(chain: RenVMChainType) throws -> String? {
+    public func gatewayAddress(chain: RenVMChainType) throws -> String? {
         switch self {
         case .loaded(let response, _):
             return try chain.dataToAddress(data: response.gatewayAddress)
@@ -24,7 +24,7 @@ public enum LockAndMintServiceState {
         }
     }
     
-    var estimatedTransctionFee: UInt64? {
+    public var estimatedTransctionFee: UInt64? {
         switch self {
         case .loaded(_, let fee):
             return fee
