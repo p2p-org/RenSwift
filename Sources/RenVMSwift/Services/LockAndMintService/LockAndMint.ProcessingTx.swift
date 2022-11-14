@@ -7,13 +7,18 @@ extension LockAndMint {
     }
     
     public struct ProcessingTx: Codable, Hashable {
+        public static var maxVote: UInt = 3
+        public var tx: LockAndMint.IncomingTransaction
+        public var state: State
+        public var isProcessing: Bool = false
+        public var timestamp: Timestamp = .init()
+        
         public enum State: Codable, Hashable {
-            case received(at: Date)
-            case voted(numberOfVotes: UInt, at: Date)
-            case confirmed(at: Date)
-            case submited(at: Date)
-            case minted(at: Date)
-            case ignored(at: Date, error: LockAndMint.ProcessingError)
+            case confirming
+            case confirmed
+            case submited
+            case minted
+            case ignored(error: LockAndMint.ProcessingError)
             
             public var isConfirmed: Bool {
                 switch self {
@@ -53,7 +58,7 @@ extension LockAndMint {
             
             public var ingoredError: LockAndMint.ProcessingError? {
                 switch self {
-                case let .ignored(_, error):
+                case let .ignored(error):
                     return error
                 default:
                     return nil
@@ -61,10 +66,17 @@ extension LockAndMint {
             }
         }
         
-        public static var maxVote: UInt = 3
-        public var tx: LockAndMint.IncomingTransaction
-        public var state: State
-        public var isProcessing: Bool = false
+        public struct Timestamp: Codable, Hashable {
+            public var voteAt: [UInt: Date] = [:]
+            public var confirmedAt: Date?
+            public var submitedAt: Date?
+            public var mintedAt: Date?
+            public var ignoredAt: Date?
+            
+            public var lastVoteAt: Date? {
+                voteAt.keys.max() != nil ? voteAt[voteAt.keys.max()!]: nil
+            }
+        }
     }
 }
 
@@ -83,12 +95,10 @@ extension Array where Element == LockAndMint.ProcessingTx {
                 submited.append(tx)
             case .confirmed:
                 confirmed.append(tx)
-            case .received:
+            case .confirming:
                 received.append(tx)
             case .ignored:
                 ignored.append(tx)
-            default:
-                break
             }
         }
         return (minted: minted, submited: submited, confirmed: confirmed, received: received, ignored: ignored)

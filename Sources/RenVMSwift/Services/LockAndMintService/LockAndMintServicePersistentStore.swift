@@ -134,11 +134,14 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     public func markAsReceived(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, state: .received(at: date)))
+                current.append(.init(tx: tx, state: .confirming, timestamp: .init(voteAt: [tx.vout: Date()])))
                 return true
             }
             
-            current[index].state = .voted(numberOfVotes: tx.vout, at: date)
+            current[index].state = .confirming
+            if current[index].timestamp.voteAt[tx.vout] == nil {
+                current[index].timestamp.voteAt[tx.vout] = Date()
+            }
             return true
         }
         
@@ -150,10 +153,13 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     public func markAsConfirmed(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, state: .confirmed(at: date)))
+                current.append(.init(tx: tx, state: .confirmed, timestamp: .init(confirmedAt: Date())))
                 return true
             }
-            current[index].state = .confirmed(at: date)
+            current[index].state = .confirmed
+            if current[index].timestamp.confirmedAt == nil {
+                current[index].timestamp.confirmedAt = Date()
+            }
             return true
         }
         
@@ -165,10 +171,13 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     public func markAsSubmited(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, state: .submited(at: date)))
+                current.append(.init(tx: tx, state: .submited, timestamp: .init(submitedAt: Date())))
                 return true
             }
-            current[index].state = .submited(at: date)
+            current[index].state = .submited
+            if current[index].timestamp.submitedAt == nil {
+                current[index].timestamp.submitedAt = Date()
+            }
             return true
         }
         
@@ -180,10 +189,13 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     public func markAsMinted(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, state: .minted(at: date)))
+                current.append(.init(tx: tx, state: .minted, timestamp: .init(submitedAt: Date())))
                 return true
             }
-            current[index].state = .minted(at: date)
+            current[index].state = .minted
+            if current[index].timestamp.mintedAt == nil {
+                current[index].timestamp.mintedAt = Date()
+            }
             return true
         }
         
@@ -197,7 +209,10 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
             guard let index = current.indexOf(txid) else {
                 return false
             }
-            current[index].state = .ignored(at: date, error: error)
+            current[index].state = .ignored(error: error)
+            if current[index].timestamp.ignoredAt == nil {
+                current[index].timestamp.ignoredAt = Date()
+            }
             return true
         }
         
