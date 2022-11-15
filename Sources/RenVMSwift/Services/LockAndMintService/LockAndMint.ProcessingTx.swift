@@ -13,12 +13,27 @@ extension LockAndMint {
         public var isProcessing: Bool = false
         public var timestamp: Timestamp = .init()
         
-        public enum State: Codable, Hashable {
+        public enum State: Codable, Hashable, Comparable, Equatable {
             case confirming
             case confirmed
             case submited
             case minted
             case ignored(error: LockAndMint.ProcessingError)
+            
+            private var _numRepresentable: Int {
+                switch self {
+                case .confirming:
+                    return 0
+                case .confirmed:
+                    return 1
+                case .submited:
+                    return 2
+                case .minted:
+                    return 3
+                case .ignored:
+                    return 4
+                }
+            }
             
             public var isConfirmed: Bool {
                 switch self {
@@ -63,6 +78,10 @@ extension LockAndMint {
                 default:
                     return nil
                 }
+            }
+            
+            public static func < (lhs: LockAndMint.ProcessingTx.State, rhs: LockAndMint.ProcessingTx.State) -> Bool {
+                lhs._numRepresentable < rhs._numRepresentable
             }
         }
         
