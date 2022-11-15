@@ -207,37 +207,19 @@ public class LockAndMintServiceImpl: LockAndMintService {
             return
         }
         
-        // detect action for each incomming transactions, save status for future use
-        var confirmedTxIds = [String]()
-        for transaction in incommingTransactions {
+        // save to persistentStore unsaved transaction
+        for transaction in incommingTransactions where await isTransactionUnsaved(transaction) {
             // get marker date
             var date = Date()
             if let blocktime = transaction.status.blockTime {
                 date = Date(timeIntervalSince1970: TimeInterval(blocktime))
             }
-
-            // for confirmed transaction, do submit
-            if transaction.status.confirmed {
-                // check if transaction is invalid
-                if let tx = await persistentStore.processingTransactions.first(where: {$0.tx.txid == transaction.txid}),
-                   let ignoredError = tx.state.ingoredError
-                {
-                    if showLog {
-                        Logger.log(event: .info, message: "Transaction \(transaction.txid) was ignored with error: \(ignoredError)")
-                    }
-                } else {
-                    // mark as confirmed
-                    await persistentStore.markAsConfirmed(transaction, at: date)
-                    await updateProcessingTransactions()
-                }
-                
-                // save to submit
-                confirmedTxIds.append(transaction.txid)
-            }
             
-            // for inconfirming transaction, mark as received and wait
-            else {
-                // mark as received
+            // save transaction
+            if transaction.status.confirmed {
+                await persistentStore.markAsConfirmed(transaction, at: date)
+                await updateProcessingTransactions()
+            } else {
                 await persistentStore.markAsReceived(transaction, at: date)
                 await updateProcessingTransactions()
             }
@@ -368,5 +350,10 @@ public class LockAndMintServiceImpl: LockAndMintService {
     // update current processing transactions
     private func updateProcessingTransactions() async {
         processingTxsSubject.send(await persistentStore.processingTransactions)
+    }
+    
+    // check if transaction saved
+    private func isTransactionUnsaved(_ tx: LockAndMint.IncomingTransaction) async -> Bool {
+        await !persistentStore.processingTransactions.contains(where: {$0.tx.txid == tx.txid})
     }
 }
