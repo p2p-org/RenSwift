@@ -352,8 +352,6 @@ public class LockAndMintServiceImpl: LockAndMintService {
             try Task.checkCancellation()
             do {
                 _ = try await lockAndMint.mint(state: state, signer: account.secret)
-                await self.persistentStore.markAsMinted(tx.tx, at: Date())
-                await self.updateProcessingTransactions()
             } catch {
                 // other error
                 if !chain.isAlreadyMintedError(error) {
@@ -362,6 +360,8 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 
                 // already minted
             }
+            await self.persistentStore.markAsMinted(tx.tx, at: Date())
+            await self.updateProcessingTransactions()
         }
     }
     
