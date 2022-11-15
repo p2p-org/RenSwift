@@ -341,16 +341,19 @@ public class LockAndMintServiceImpl: LockAndMintService {
         
         // mint
         try Task.checkCancellation()
-        try await Task.retrying(
+        Task.retrying(
             where: { error in
                 (error as? RenVMError) == .paramsMissing
             },
             maxRetryCount: .max,
             retryDelay: refreshingRate
-        ) {
+        ) { [weak self] in
+            guard let self = self else { return }
             try Task.checkCancellation()
             do {
                 _ = try await lockAndMint.mint(state: state, signer: account.secret)
+                await self.persistentStore.markAsMinted(tx.tx, at: Date())
+                await self.updateProcessingTransactions()
             } catch {
                 // other error
                 if !chain.isAlreadyMintedError(error) {
@@ -359,11 +362,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 
                 // already minted
             }
-        }.value
-        
-        
-        await persistentStore.markAsMinted(tx.tx, at: Date())
-        await updateProcessingTransactions()
+        }
     }
     
     // update current processing transactions
