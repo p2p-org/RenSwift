@@ -320,9 +320,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         // mint
         try Task.checkCancellation()
         Task.retrying(
-            where: { error in
-                (error as? RenVMError) == .paramsMissing
-            },
+            where: { _ in true },
             maxRetryCount: .max,
             retryDelay: refreshingRate
         ) { [weak self] in
@@ -353,6 +351,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
             catch {
                 if self.showLog {
                     Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                    Logger.log(event: .info, message: "Retrying...")
                 }
                 throw error
             }
