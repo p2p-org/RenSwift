@@ -265,29 +265,11 @@ public class LockAndMintServiceImpl: LockAndMintService {
                     guard let self = self else {return}
                     do {
                         try await self.submitIfNeededAndMint(tx)
-                    } catch let error as RenVMError where error.message.starts(with: "insufficient amount after fees") {
-                        let array = error.message
-                            .replacingOccurrences(of: "insufficient amount after fees: expected at least ", with: "")
-                            .replacingOccurrences(of: ", got ", with: " ")
-                            .components(separatedBy: " ")
-                        
-                        // mark as ignored
-                        if array.count == 2,
-                           let expected = UInt64(array[0]),
-                           let got = UInt64(array[1])
-                        {
-                            await self.persistentStore.markAsInvalid(txid: tx.tx.txid, error: .insufficientFund(expected: expected, got: got), at: Date())
-                        } else {
-                            await self.persistentStore.markAsInvalid(txid: tx.tx.txid, error: .other(error.message), at: Date())
-                        }
-                        
-                        // notify
-                        await self.updateProcessingTransactions()
                     } catch {
-                        print(error)
                         if self.showLog {
-                            Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                            print("submitIfNeededAndMint error: ", error)
                         }
+                        
                     }
                 }
             }
@@ -348,21 +330,60 @@ public class LockAndMintServiceImpl: LockAndMintService {
             try Task.checkCancellation()
             do {
                 _ = try await lockAndMint.mint(state: state, signer: account.secret)
-            } catch {
-                // other error
-                if !chain.isAlreadyMintedError(error) {
-                    throw error
-                }
-                
-                // already minted
+                await self.persistentStore.markAsMinted(tx.tx, at: Date())
+                await self.updateProcessingTransactions()
             }
-            await self.persistentStore.markAsMinted(tx.tx, at: Date())
-            await self.updateProcessingTransactions()
+            
+            // insufficient fund error
+            catch let error as RenVMError where error.isInsufficientFundError {
+                await self.persistentStore.markAsInvalid(txid: tx.tx.txid, error: error.processingError, at: Date())
+                if self.showLog {
+                    Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                }
+            }
+            
+            // already mint error
+            catch let error where chain.isAlreadyMintedError(error) {
+                // already minted
+                await self.persistentStore.markAsMinted(tx.tx, at: Date())
+                await self.updateProcessingTransactions()
+            }
+            
+            // other error
+            catch {
+                if self.showLog {
+                    Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                }
+                throw error
+            }
         }
     }
     
     // update current processing transactions
     private func updateProcessingTransactions() async {
         processingTxsSubject.send(await persistentStore.processingTransactions)
+    }
+}
+
+private extension RenVMError {
+    var isInsufficientFundError: Bool {
+        message.starts(with: "insufficient amount after fees")
+    }
+    
+    var processingError: LockAndMint.ProcessingError {
+        let array = message
+            .replacingOccurrences(of: "insufficient amount after fees: expected at least ", with: "")
+            .replacingOccurrences(of: ", got ", with: " ")
+            .components(separatedBy: " ")
+        
+        // mark as ignored
+        if array.count == 2,
+           let expected = UInt64(array[0]),
+           let got = UInt64(array[1])
+        {
+            return .insufficientFund(expected: expected, got: got)
+        } else {
+            return .other(message)
+        }
     }
 }
