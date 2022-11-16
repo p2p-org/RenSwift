@@ -9,7 +9,7 @@ public protocol ExplorerAPIClient {
     func getIncommingTransactions(for address: String) async throws -> [ExplorerAPIIncomingTransaction]
     
     /// Get transaction info that involves in LockAndMint process
-    /// - Parameter transaction: transaction
+    /// - Parameter id: transaction's id
     /// - Returns: info of the transaction
-    func getTransactionInfo(_ transaction: String) async throws -> ExplorerAPITransaction
+    func getTransactionInfo(with id: String) async throws -> ExplorerAPITransaction
 }

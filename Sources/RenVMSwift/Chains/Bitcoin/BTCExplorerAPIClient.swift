@@ -32,12 +32,25 @@ public class BTCExplorerAPIClient: ExplorerAPIClient {
             .map {$0.mapToExplorerAPIIncomingTransaction()}
     }
     
-    public func getTransactionInfo(_ transaction: String) async throws -> ExplorerAPITransaction {
-        fatalError()
+    /// Get transaction info that involves in LockAndMint process
+    /// - Parameter id: transaction's id
+    /// - Returns: info of the transaction
+    public func getTransactionInfo(with id: String) async throws -> ExplorerAPITransaction {
+        let urlString = "https://blockstream.info\(network.isTestnet ? "/testnet": "")/api/tx/\(id)"
+        guard let url = URL(string: urlString)
+        else {
+            throw RenVMError.invalidEndpoint
+        }
+        Logger.log(event: .request, message: urlString)
+        let (data, _) = try await URLSession.shared.data(for: url)
+        Logger.log(event: .response, message: String(data: data, encoding: .utf8) ?? "")
+        return try JSONDecoder().decode(BlockstreamTransaction.self, from: data)
+            .mapToExplorerAPITransaction()
     }
 }
 
-// MARK: - Models
+// MARK: - BlockstreamIncomingTransaction
+
 struct BlockstreamIncomingTransaction: Codable, Equatable, Hashable {
     let txid: String
     var vout: UInt
@@ -69,3 +82,50 @@ struct BlockstreamInfoStatus: Codable, Equatable, Hashable {
         case blockTime = "block_time"
     }
 }
+
+// MARK: - BlockstreamTransaction
+
+struct BlockstreamTransaction: Codable {
+    let txid: String
+    let version, locktime: Int
+    let vin: [BlockstreamTransactionVin]
+    let vout: [BlockstreamTransactionVout]
+    let size, weight, fee: Int
+    let status: BlockstreamInfoStatus
+    
+    func mapToExplorerAPITransaction() -> ExplorerAPITransaction {
+        ExplorerAPITransaction(id: txid)
+    }
+}
+
+struct BlockstreamTransactionVin: Codable {
+    let txid: String
+    let vout: Int
+    let prevout: BlockstreamTransactionVout
+    let scriptsig, scriptsigASM: String
+    let witness: [String]
+    let isCoinbase: Bool
+    let sequence: Int
+
+    enum CodingKeys: String, CodingKey {
+        case txid, vout, prevout, scriptsig
+        case scriptsigASM = "scriptsig_asm"
+        case witness
+        case isCoinbase = "is_coinbase"
+        case sequence
+    }
+}
+
+struct BlockstreamTransactionVout: Codable {
+    let scriptpubkey, scriptpubkeyASM, scriptpubkeyType, scriptpubkeyAddress: String
+    let value: Int
+
+    enum CodingKeys: String, CodingKey {
+        case scriptpubkey
+        case scriptpubkeyASM = "scriptpubkey_asm"
+        case scriptpubkeyType = "scriptpubkey_type"
+        case scriptpubkeyAddress = "scriptpubkey_address"
+        case value
+    }
+}
+
