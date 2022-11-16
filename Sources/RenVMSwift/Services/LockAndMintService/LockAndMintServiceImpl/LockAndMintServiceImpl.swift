@@ -9,7 +9,11 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// PersistentStore for storing current work
     private let persistentStore: LockAndMintServicePersistentStore
     
+    /// Destination chain provider
     private let chainProvider: ChainProvider
+    
+    /// Source chain's Explorer APIClient
+    private let sourceChainExplorerAPIClient: ExplorerAPIClient
     
     /// API Client for RenVM
     private let rpcClient: RenVMRpcClientType
@@ -57,6 +61,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     public init(
         persistentStore: LockAndMintServicePersistentStore,
         chainProvider: ChainProvider,
+        sourceChainExplorerAPIClient: ExplorerAPIClient,
         rpcClient: RenVMRpcClientType,
         mintToken: MintToken,
         version: String = "1",
@@ -66,6 +71,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     ) {
         self.persistentStore = persistentStore
         self.chainProvider = chainProvider
+        self.sourceChainExplorerAPIClient = sourceChainExplorerAPIClient
         self.rpcClient = rpcClient
         self.mintToken = mintToken
         self.version = version
@@ -202,7 +208,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         else { return }
         
         // get incomming transaction
-        guard let incommingTransactions = try? await self.rpcClient.getIncomingTransactions(address: address)
+        guard let incommingTransactions = try? await self.sourceChainExplorerAPIClient.getIncommingTransactions(for: address)
         else {
             return
         }
@@ -211,12 +217,12 @@ public class LockAndMintServiceImpl: LockAndMintService {
         for transaction in incommingTransactions {
             // get marker date
             var date = Date()
-            if let blocktime = transaction.status.blockTime {
+            if let blocktime = transaction.blockTime {
                 date = Date(timeIntervalSince1970: TimeInterval(blocktime))
             }
             
             // receive new transaction
-            if !transaction.status.confirmed {
+            if !transaction.isConfirmed {
                 // transaction is not confirmed
                 await persistentStore.markAsReceived(transaction, at: date)
             }
@@ -224,7 +230,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
             // update unconfirmed transaction
             else {
                 // if saved transaction is confirmed
-                if let savedTransaction = await persistentStore.processingTransactions.first(where: {$0.tx.txid == transaction.txid}),
+                if let savedTransaction = await persistentStore.processingTransactions.first(where: {$0.tx.id == transaction.id}),
                    savedTransaction.state >= .confirmed
                 {
                     // do nothing, transaction has been marked
@@ -295,8 +301,8 @@ public class LockAndMintServiceImpl: LockAndMintService {
 
         // get state
         let state = try lockAndMint.getDepositState(
-            transactionHash: tx.tx.txid,
-            txIndex: String(tx.tx.vout),
+            transactionHash: tx.tx.id,
+            txIndex: String(tx.tx.confirmations),
             amount: String(tx.tx.value),
             sendTo: response.sendTo,
             gHash: response.gHash,
@@ -334,9 +340,9 @@ public class LockAndMintServiceImpl: LockAndMintService {
             
             // insufficient fund error
             catch let error as RenVMError where error.isInsufficientFundError {
-                await self.persistentStore.markAsInvalid(txid: tx.tx.txid, error: error.processingError, at: Date())
+                await self.persistentStore.markAsInvalid(txid: tx.tx.id, error: error.processingError, at: Date())
                 if self.showLog {
-                    Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                    Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.id), error: \(error)")
                 }
             }
             
@@ -350,7 +356,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
             // other error
             catch {
                 if self.showLog {
-                    Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                    Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.id), error: \(error)")
                     Logger.log(event: .info, message: "Retrying...")
                 }
                 throw error
