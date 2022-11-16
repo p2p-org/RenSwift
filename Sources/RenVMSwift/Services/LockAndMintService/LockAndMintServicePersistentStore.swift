@@ -134,7 +134,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
         
         if showLog {
-            Logger.log(event: .request, message: "Transaction with id \(transaction.tx.id), confirmations: \(transaction.tx.confirmations), isConfirmed: \(transaction.tx.isConfirmed), value: \(transaction.tx.value) is being processed")
+            Logger.log(event: .request, message: "Transaction is being processed \(transaction.tx)")
         }
     }
     
@@ -152,21 +152,22 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     }
     
     public func markAsReceived(_ tx: ExplorerAPIIncomingTransaction, at date: Date) {
+        let confirmations = tx.confirmations ?? 0
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, state: .confirming, timestamp: .init(voteAt: [tx.confirmations: Date()])))
+                current.append(.init(tx: tx, state: .confirming, timestamp: .init(voteAt: [confirmations: Date()])))
                 return true
             }
             
             current[index].state = .confirming
-            if current[index].timestamp.voteAt[tx.confirmations] == nil {
-                current[index].timestamp.voteAt[tx.confirmations] = Date()
+            if current[index].timestamp.voteAt[confirmations] == nil {
+                current[index].timestamp.voteAt[confirmations] = Date()
             }
             return true
         }
         
         if showLog {
-            Logger.log(event: .event, message: "Received transaction with id \(tx.id), vout: \(tx.confirmations), isConfirmed: \(tx.isConfirmed), value: \(tx.value)")
+            Logger.log(event: .event, message: "Received transaction \(tx)")
         }
     }
     
@@ -184,7 +185,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
         
         if showLog {
-            Logger.log(event: .event, message: "Transaction with id \(tx.id) has been confirmed, vout: \(tx.confirmations), value: \(tx.value)")
+            Logger.log(event: .event, message: "Transaction has been confirmed \(tx)")
         }
     }
     
@@ -202,7 +203,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
         
         if showLog {
-            Logger.log(event: .event, message: "Transaction with id \(tx.id) has been submited, value: \(tx.value)")
+            Logger.log(event: .event, message: "Transaction has been submited \(tx)")
         }
     }
     
@@ -220,7 +221,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
         
         if showLog {
-            Logger.log(event: .event, message: "Transaction with id \(tx.id) has been minted, value: \(tx.value)")
+            Logger.log(event: .event, message: "Transaction has been minted \(tx)")
         }
     }
     

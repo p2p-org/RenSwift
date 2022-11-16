@@ -48,6 +48,7 @@ struct BlockstreamIncomingTransaction: Codable, Equatable, Hashable {
         ExplorerAPIIncomingTransaction(
             id: txid,
             confirmations: vout,
+            vout: vout,
             value: value,
             isConfirmed: status.confirmed,
             blockTime: status.blockTime

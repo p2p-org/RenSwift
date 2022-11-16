@@ -10,7 +10,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     private let persistentStore: LockAndMintServicePersistentStore
     
     /// Destination chain provider
-    private let chainProvider: ChainProvider
+    private let destinationChainProvider: ChainProvider
     
     /// Source chain's Explorer APIClient
     private let sourceChainExplorerAPIClient: ExplorerAPIClient
@@ -60,7 +60,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     
     public init(
         persistentStore: LockAndMintServicePersistentStore,
-        chainProvider: ChainProvider,
+        destinationChainProvider: ChainProvider,
         sourceChainExplorerAPIClient: ExplorerAPIClient,
         rpcClient: RenVMRpcClientType,
         mintToken: MintToken,
@@ -70,7 +70,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         showLog: Bool
     ) {
         self.persistentStore = persistentStore
-        self.chainProvider = chainProvider
+        self.destinationChainProvider = destinationChainProvider
         self.sourceChainExplorerAPIClient = sourceChainExplorerAPIClient
         self.rpcClient = rpcClient
         self.mintToken = mintToken
@@ -150,10 +150,10 @@ public class LockAndMintServiceImpl: LockAndMintService {
         
         do {
             // get account
-            let account = try await chainProvider.getAccount()
+            let account = try await destinationChainProvider.getAccount()
             
             // load chain
-            chain = try await chainProvider.load()
+            chain = try await destinationChainProvider.load()
             
             // load lock and mint
             lockAndMint = try LockAndMint(
@@ -292,7 +292,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         }
         
         // get infos
-        let account = try await chainProvider.getAccount()
+        let account = try await destinationChainProvider.getAccount()
         
         guard let response = stateSubject.value.response,
               let lockAndMint = lockAndMint,
@@ -302,7 +302,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         // get state
         let state = try lockAndMint.getDepositState(
             transactionHash: tx.tx.id,
-            txIndex: String(tx.tx.confirmations),
+            txIndex: String(tx.tx.vout),
             amount: String(tx.tx.value),
             sendTo: response.sendTo,
             gHash: response.gHash,
