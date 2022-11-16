@@ -1,5 +1,6 @@
 import Foundation
 import LoggerSwift
+import Combine
 
 /// `LockAndMintService` implementation
 public class LockAndMintServiceImpl: LockAndMintService {
@@ -30,9 +31,6 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Flag to indicate of whether log should be shown or not
     private let showLog: Bool
     
-    /// Response from gateway address
-    private var gatewayAddressResponse: LockAndMint.GatewayAddressResponse?
-    
     /// Loaded lockAndMint
     private var lockAndMint: LockAndMint?
     
@@ -42,11 +40,17 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Tasks for cancellation
     private var tasks = [Task<Void, Never>]()
     
-    /// Delegate
-    public var delegate: LockAndMintServiceDelegate?
+    /// State
+    private let stateSubject = CurrentValueSubject<LockAndMintServiceState, Never>(.initializing)
+    public var statePublisher: AnyPublisher<LockAndMintServiceState, Never> {
+        stateSubject.eraseToAnyPublisher()
+    }
     
-    /// Indicator isLoading
-    public private(set) var isLoading: Bool = false
+    /// ProcessingTxs
+    private let processingTxsSubject = CurrentValueSubject<[LockAndMint.ProcessingTx], Never>([])
+    public var processingTxsPublisher: AnyPublisher<[LockAndMint.ProcessingTx], Never> {
+        processingTxsSubject.eraseToAnyPublisher()
+    }
     
     // MARK: - Initializers
     
@@ -103,6 +107,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         try await _resume()
     }
     
+    /// Expire current session
     public func expireCurrentSession() async throws {
         // clean
         await clean()
@@ -111,20 +116,31 @@ public class LockAndMintServiceImpl: LockAndMintService {
         await persistentStore.clearAll()
     }
     
+    /// Get current gateway address
+    public func getCurrentGatewayAddress() throws -> String? {
+        guard let chain = chain, let data = stateSubject.value.response?.gatewayAddress else {return nil}
+        return try chain.dataToAddress(data: data)
+    }
+    
     // MARK: - Private
     
     /// Clean all current set up
     private func clean() async {
-        await persistentStore.markAllTransactionsAsNotProcessing()
-        await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+        // cancel all current tasks
         tasks.forEach {$0.cancel()}
+        
+        // mark all transaction as not processing
+        await persistentStore.markAllTransactionsAsNotProcessing()
+        
+        // notify
+        stateSubject.send(.initializing)
+        await updateProcessingTransactions()
     }
     
     /// Resume the current session
     private func _resume() async throws {
         // loading
-        await delegate?.lockAndMintServiceWillStartLoading(self)
-        isLoading = true
+        stateSubject.send(.loading)
         
         do {
             // get account
@@ -143,10 +159,17 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 session: await persistentStore.session
             )
             
-            // save address
-            gatewayAddressResponse = try await lockAndMint!.generateGatewayAddress()
-            let address = try chain!.dataToAddress(data: gatewayAddressResponse!.gatewayAddress)
+            // get response and estimated fee
+            let (gatewayAddressResponse, estimatedFee) = await(
+                try lockAndMint!.generateGatewayAddress(),
+                try rpcClient.estimateTransactionFee(log: showLog)
+            )
+            
+            let address = try chain!.dataToAddress(data: gatewayAddressResponse.gatewayAddress)
             await persistentStore.save(gatewayAddress: address)
+            
+            // notify
+            stateSubject.send(.loaded(response: gatewayAddressResponse, estimatedTransactionFee: estimatedFee))
             
             // continue previous works in a separated task
             let previousTask = Task<Void, Never>.detached { [weak self] in
@@ -167,14 +190,9 @@ public class LockAndMintServiceImpl: LockAndMintService {
             }
             tasks.append(observingTask)
             
-            // loaded
-            await delegate?.lockAndMintService(self, didLoadWithGatewayAddress: address)
-            isLoading = false
-            
         } catch {
             // indicate error
-            await delegate?.lockAndMintService(self, didFailToLoadWithError: error)
-            isLoading = false
+            stateSubject.send(.error(error))
         }
     }
     
@@ -189,41 +207,37 @@ public class LockAndMintServiceImpl: LockAndMintService {
             return
         }
         
-        // detect action for each incomming transactions, save status for future use
-        var confirmedTxIds = [String]()
+        // save to persistentStore unsaved transaction
         for transaction in incommingTransactions {
             // get marker date
             var date = Date()
             if let blocktime = transaction.status.blockTime {
                 date = Date(timeIntervalSince1970: TimeInterval(blocktime))
             }
-
-            // for confirmed transaction, do submit
-            if transaction.status.confirmed {
-                // check if transaction is invalid
-                if let tx = await persistentStore.processingTransactions.first(where: {$0.tx.txid == transaction.txid}),
-                   tx.validationStatus != .valid
-                {
-                    if showLog {
-                        Logger.log(event: .info, message: "Transaction \(transaction.txid) is being ignored because it is \(tx.validationStatus)")
-                    }
-                } else {
-                    // mark as confirmed
-                    await persistentStore.markAsConfirmed(transaction, at: date)
-                    await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
-                }
-                
-                // save to submit
-                confirmedTxIds.append(transaction.txid)
+            
+            // receive new transaction
+            if !transaction.status.confirmed {
+                // transaction is not confirmed
+                await persistentStore.markAsReceived(transaction, at: date)
             }
             
-            // for inconfirming transaction, mark as received and wait
+            // update unconfirmed transaction
             else {
-                // mark as received
-                await persistentStore.markAsReceived(transaction, at: date)
-                await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+                // if saved transaction is confirmed
+                if let savedTransaction = await persistentStore.processingTransactions.first(where: {$0.tx.txid == transaction.txid}),
+                   savedTransaction.state >= .confirmed
+                {
+                    // do nothing, transaction has been marked
+                }
+                // transaction is confirmed, update or add new
+                else {
+                    await persistentStore.markAsConfirmed(transaction, at: date)
+                }
             }
         }
+        
+        // update new data
+        await updateProcessingTransactions()
         
         // submit if needed and mint
         await submitIfNeededAndMintAllTransactionsInQueue()
@@ -235,13 +249,13 @@ public class LockAndMintServiceImpl: LockAndMintService {
         let groupedTransactions = await persistentStore.processingTransactions.grouped()
         let confirmedAndSubmitedTransactions = groupedTransactions.confirmed + groupedTransactions.submited
         let transactionsToBeProcessed = confirmedAndSubmitedTransactions.filter {
-            $0.isProcessing == false && $0.validationStatus == .valid
+            $0.isProcessing == false
         }
         
         // mark as processing
         for tx in transactionsToBeProcessed {
             await persistentStore.markAsProcessing(tx)
-            await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+            await updateProcessingTransactions()
         }
         
         // process transactions simutaneously
@@ -251,15 +265,11 @@ public class LockAndMintServiceImpl: LockAndMintService {
                     guard let self = self else {return}
                     do {
                         try await self.submitIfNeededAndMint(tx)
-                    } catch let error as RenVMError {
-                        if error.message.starts(with: "insufficient amount after fees") {
-                            await self.persistentStore.markAsInvalid(txid: tx.tx.txid, reason: error.message)
-                            await self.delegate?.lockAndMintService(self, didUpdateTransactions: await self.persistentStore.processingTransactions)
-                        }
                     } catch {
                         if self.showLog {
-                            Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                            print("submitIfNeededAndMint error: ", error)
                         }
+                        
                     }
                 }
             }
@@ -270,9 +280,15 @@ public class LockAndMintServiceImpl: LockAndMintService {
     
     /// Submit if needed and mint tx
     func submitIfNeededAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
+        // guard for tx that was confirmed or submited only
+        guard tx.state.isConfirmed || tx.state.isSubmited else {
+            return
+        }
+        
+        // get infos
         let account = try await chainProvider.getAccount()
         
-        guard let response = gatewayAddressResponse,
+        guard let response = stateSubject.value.response,
               let lockAndMint = lockAndMint,
               let chain = chain
         else { throw RenVMError.unknown }
@@ -288,43 +304,85 @@ public class LockAndMintServiceImpl: LockAndMintService {
         )
         
         // submit
-        if tx.submitedAt == nil {
+        if !tx.state.isSubmited {
             do {
                 try Task.checkCancellation()
                 let hash = try await lockAndMint.submitMintTransaction(state: state)
                 print("submited transaction with hash: \(hash)")
                 await persistentStore.markAsSubmited(tx.tx, at: Date())
-                await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+                await updateProcessingTransactions()
             } catch {
                 debugPrint(error)
-                // try to mint event if error
+                // try to mint anyway, ignore error
             }
         }
         
         // mint
         try Task.checkCancellation()
-        try await Task.retrying(
-            where: { error in
-                (error as? RenVMError) == .paramsMissing
-            },
+        Task.retrying(
+            where: { _ in true },
             maxRetryCount: .max,
-            retryDelay: 5
-        ) {
+            retryDelay: refreshingRate
+        ) { [weak self] in
+            guard let self = self else { return }
             try Task.checkCancellation()
             do {
                 _ = try await lockAndMint.mint(state: state, signer: account.secret)
-            } catch {
-                // other error
-                if !chain.isAlreadyMintedError(error) {
-                    throw error
-                }
-                
-                // already minted
+                await self.persistentStore.markAsMinted(tx.tx, at: Date())
+                await self.updateProcessingTransactions()
             }
-        }.value
+            
+            // insufficient fund error
+            catch let error as RenVMError where error.isInsufficientFundError {
+                await self.persistentStore.markAsInvalid(txid: tx.tx.txid, error: error.processingError, at: Date())
+                if self.showLog {
+                    Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                }
+            }
+            
+            // already mint error
+            catch let error where chain.isAlreadyMintedError(error) {
+                // already minted
+                await self.persistentStore.markAsMinted(tx.tx, at: Date())
+                await self.updateProcessingTransactions()
+            }
+            
+            // other error
+            catch {
+                if self.showLog {
+                    Logger.log(event: .error, message: "Could not mint transaction with id \(tx.tx.txid), error: \(error)")
+                    Logger.log(event: .info, message: "Retrying...")
+                }
+                throw error
+            }
+        }
+    }
+    
+    // update current processing transactions
+    private func updateProcessingTransactions() async {
+        processingTxsSubject.send(await persistentStore.processingTransactions)
+    }
+}
+
+private extension RenVMError {
+    var isInsufficientFundError: Bool {
+        message.starts(with: "insufficient amount after fees")
+    }
+    
+    var processingError: LockAndMint.ProcessingError {
+        let array = message
+            .replacingOccurrences(of: "insufficient amount after fees: expected at least ", with: "")
+            .replacingOccurrences(of: ", got ", with: " ")
+            .components(separatedBy: " ")
         
-        
-        await persistentStore.markAsMinted(tx.tx, at: Date())
-        await delegate?.lockAndMintService(self, didUpdateTransactions: await persistentStore.processingTransactions)
+        // mark as ignored
+        if array.count == 2,
+           let expected = UInt64(array[0]),
+           let got = UInt64(array[1])
+        {
+            return .insufficientFund(expected: expected, got: got)
+        } else {
+            return .other(message)
+        }
     }
 }

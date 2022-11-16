@@ -1,6 +1,7 @@
 import XCTest
 import SolanaSwift
 import RenVMSwift
+import Combine
 
 class LockAndMintServiceTests: XCTestCase {
     let persistentStore = UserDefaultLockAndMintServicePersistentStore(
@@ -10,6 +11,7 @@ class LockAndMintServiceTests: XCTestCase {
         showLog: true
     )
     var service: LockAndMintService!
+    var subscriptions = [AnyCancellable]()
     
     override func setUp() async throws {
         service = LockAndMintServiceImpl(
@@ -27,8 +29,15 @@ class LockAndMintServiceTests: XCTestCase {
     }
     
     func testLockAndMintService() async throws {
-        print("Test is runing on thread: \(Thread.current)")
+        // Observe state
+        service.statePublisher
+            .receive(on: RunLoop.main)
+            .sink { state in
+                print("service state: ", state)
+            }
+            .store(in: &subscriptions)
         
+        // Resume session
         if let session = await persistentStore.session,
            session.isValid
         {
@@ -40,10 +49,11 @@ class LockAndMintServiceTests: XCTestCase {
         // check if operation block the main queue
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             DispatchQueue.main.async {
-                print("Ping the ui thread \(Thread.current)")
+                print("Ping the ui thread")
             }
         }
         
+        // wait for forever
         let expectation = XCTestExpectation(description: "Your expectation")
         wait(for: [expectation], timeout: 9999999999999)
     }

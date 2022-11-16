@@ -3,11 +3,11 @@ import Foundation
 extension LockAndMint {
     public struct IncomingTransaction: Codable, Equatable, Hashable {
         public let txid: String
-        public var vout: UInt64
+        public var vout: UInt
         public var status: BlockstreamInfoStatus
         public let value: UInt64
         
-        public init(txid: String, vout: UInt64, status: BlockstreamInfoStatus, value: UInt64) {
+        public init(txid: String, vout: UInt, status: BlockstreamInfoStatus, value: UInt64) {
             self.txid = txid
             self.vout = vout
             self.status = status

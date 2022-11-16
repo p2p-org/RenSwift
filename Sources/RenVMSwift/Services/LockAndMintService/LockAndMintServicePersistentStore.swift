@@ -42,7 +42,7 @@ public protocol LockAndMintServicePersistentStore {
     func markAsMinted(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async
     
     /// Mark as invalid
-    func markAsInvalid(txid: String, reason: String?) async
+    func markAsInvalid(txid: String, error: LockAndMint.ProcessingError, at date: Date) async
     
     // MARK: - Clearance
     /// Clear all (expire current session)
@@ -134,23 +134,14 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     public func markAsReceived(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, receivedAt: date))
+                current.append(.init(tx: tx, state: .confirming, timestamp: .init(voteAt: [tx.vout: Date()])))
                 return true
             }
-
-            if tx.vout == 3, current[index].threeVoteAt == nil {
-                current[index].threeVoteAt = date
+            
+            current[index].state = .confirming
+            if current[index].timestamp.voteAt[tx.vout] == nil {
+                current[index].timestamp.voteAt[tx.vout] = Date()
             }
-            if tx.vout == 2, current[index].twoVoteAt == nil {
-                current[index].twoVoteAt = date
-            }
-            if tx.vout == 1, current[index].oneVoteAt == nil {
-                current[index].oneVoteAt = date
-            }
-            if tx.vout == 0, current[index].receivedAt == nil {
-                current[index].receivedAt = date
-            }
-
             return true
         }
         
@@ -162,10 +153,13 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     public func markAsConfirmed(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, confirmedAt: date))
+                current.append(.init(tx: tx, state: .confirmed, timestamp: .init(confirmedAt: Date())))
                 return true
             }
-            current[index].confirmedAt = date
+            current[index].state = .confirmed
+            if current[index].timestamp.confirmedAt == nil {
+                current[index].timestamp.confirmedAt = Date()
+            }
             return true
         }
         
@@ -177,10 +171,13 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     public func markAsSubmited(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, submitedAt: date))
+                current.append(.init(tx: tx, state: .submited, timestamp: .init(submitedAt: Date())))
                 return true
             }
-            current[index].submitedAt = date
+            current[index].state = .submited
+            if current[index].timestamp.submitedAt == nil {
+                current[index].timestamp.submitedAt = Date()
+            }
             return true
         }
         
@@ -192,10 +189,13 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     public func markAsMinted(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, mintedAt: date))
+                current.append(.init(tx: tx, state: .minted, timestamp: .init(submitedAt: Date())))
                 return true
             }
-            current[index].mintedAt = date
+            current[index].state = .minted
+            if current[index].timestamp.mintedAt == nil {
+                current[index].timestamp.mintedAt = Date()
+            }
             return true
         }
         
@@ -204,17 +204,20 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
     }
     
-    public func markAsInvalid(txid: String, reason: String?) {
+    public func markAsInvalid(txid: String, error: LockAndMint.ProcessingError, at date: Date) {
         save { current in
             guard let index = current.indexOf(txid) else {
                 return false
             }
-            current[index].validationStatus = .invalid(reason: reason)
+            current[index].state = .ignored(error: error)
+            if current[index].timestamp.ignoredAt == nil {
+                current[index].timestamp.ignoredAt = Date()
+            }
             return true
         }
         
         if showLog {
-            Logger.log(event: .event, message: "Transaction with id \(txid) is invalid, reason: \(reason ?? "nil")")
+            Logger.log(event: .event, message: "Transaction with id \(txid) is invalid, error: \(error)")
         }
     }
     

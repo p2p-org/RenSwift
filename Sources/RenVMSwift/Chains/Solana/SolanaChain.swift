@@ -281,7 +281,7 @@ public struct SolanaChain: RenVMChainType {
     }
     
     public func isAlreadyMintedError(_ error: Error) -> Bool {
-        error.isAlreadyInUseSolanaError
+        error.isAlreadyInUseSolanaError || (error as? RenVMError) == RenVMError("Already in use")
     }
     
     // MARK: - Static methods
