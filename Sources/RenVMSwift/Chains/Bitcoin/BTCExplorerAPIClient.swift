@@ -1,8 +1,14 @@
 import Foundation
 import LoggerSwift
+import Task_retrying
 
 /// BTC explorer api
 public class BTCExplorerAPIClient: ExplorerAPIClient {
+    // MARK: - Constants
+    
+    /// Max confirmation for BTC network
+    private let maxConfirmations: UInt = 6
+    
     // MARK: - Properties
     
     /// RenVM network
@@ -21,22 +27,59 @@ public class BTCExplorerAPIClient: ExplorerAPIClient {
     /// - Returns: list of incomming transaction
     public func getIncommingTransactions(for address: String) async throws -> [ExplorerAPIIncomingTransaction] {
         let urlString = "https://blockstream.info\(network.isTestnet ? "/testnet": "")/api/address/\(address)/utxo"
-        guard let url = URL(string: urlString)
-        else {
-            throw RenVMError.invalidEndpoint
-        }
-        Logger.log(event: .request, message: urlString)
-        let (data, _) = try await URLSession.shared.data(for: url)
-        Logger.log(event: .response, message: String(data: data, encoding: .utf8) ?? "")
-        return try JSONDecoder().decode([BlockstreamIncomingTransaction].self, from: data)
+        return try await get(urlString: urlString, decodedTo: [BlockstreamIncomingTransaction].self)
             .map {$0.mapToExplorerAPIIncomingTransaction()}
     }
     
-    /// Get transaction info that involves in LockAndMint process
+    /// Observe confirmation of a transaction
     /// - Parameter id: transaction's id
-    /// - Returns: info of the transaction
-    public func getTransactionInfo(with id: String) async throws -> ExplorerAPITransaction {
-        let urlString = "https://blockstream.info\(network.isTestnet ? "/testnet": "")/api/tx/\(id)"
+    /// - Returns: data stream of confirmations
+    public func observeConfirmations(id: String) -> AsyncStream<UInt> {
+        if network.isTestnet {
+            // TODO: - Fix for testnet
+            return .init { continuation in
+                continuation.finish()
+            }
+        }
+        
+        // For mainnet, use btc.com
+        return .init { continuation in
+            Task.retrying(
+                where: { error in
+                    if let error = error as? TaskRetryingError, error == .timedOut {
+                        continuation.finish()
+                        return false
+                    }
+                    return true
+                },
+                maxRetryCount: .max,
+                retryDelay: 10, // seconds
+                timeoutInSeconds: 60 * 60 // 1h
+            ) { [weak self] in
+                guard let self = self else {
+                    continuation.finish()
+                    return
+                }
+                try Task.checkCancellation()
+                
+                let confirmations = try await self.get(
+                    urlString: "https://chain.api.btc.com/v3/tx/\(id)",
+                    decodedTo: BTCCOMTransaction.self
+                )
+                    .data.confirmations
+                
+                continuation.yield(confirmations)
+                
+                if confirmations < self.maxConfirmations {
+                    throw BTCExplorerAPIClientError.notYetConfirmed
+                }
+                
+                continuation.finish()
+            }
+        }
+    }
+    
+    private func `get`<T: Decodable>(urlString: String, decodedTo: T.Type) async throws -> T {
         guard let url = URL(string: urlString)
         else {
             throw RenVMError.invalidEndpoint
@@ -44,9 +87,14 @@ public class BTCExplorerAPIClient: ExplorerAPIClient {
         Logger.log(event: .request, message: urlString)
         let (data, _) = try await URLSession.shared.data(for: url)
         Logger.log(event: .response, message: String(data: data, encoding: .utf8) ?? "")
-        return try JSONDecoder().decode(BlockstreamTransaction.self, from: data)
-            .mapToExplorerAPITransaction()
+        return try JSONDecoder().decode(T.self, from: data)
     }
+}
+
+// MARK: - BTCExplorerAPIClientError
+
+private enum BTCExplorerAPIClientError: Error {
+    case notYetConfirmed
 }
 
 // MARK: - BlockstreamIncomingTransaction
@@ -83,49 +131,12 @@ struct BlockstreamInfoStatus: Codable, Equatable, Hashable {
     }
 }
 
-// MARK: - BlockstreamTransaction
-
-struct BlockstreamTransaction: Codable {
-    let txid: String
-    let version, locktime: Int
-    let vin: [BlockstreamTransactionVin]
-    let vout: [BlockstreamTransactionVout]
-    let size, weight, fee: Int
-    let status: BlockstreamInfoStatus
-    
-    func mapToExplorerAPITransaction() -> ExplorerAPITransaction {
-        ExplorerAPITransaction(id: txid)
-    }
+// MARK: - BTCComTransaction
+private struct BTCCOMTransaction: Codable {
+    let data: BTCCOMTransactionData
 }
 
-struct BlockstreamTransactionVin: Codable {
-    let txid: String
-    let vout: Int
-    let prevout: BlockstreamTransactionVout
-    let scriptsig, scriptsigASM: String
-    let witness: [String]
-    let isCoinbase: Bool
-    let sequence: Int
-
-    enum CodingKeys: String, CodingKey {
-        case txid, vout, prevout, scriptsig
-        case scriptsigASM = "scriptsig_asm"
-        case witness
-        case isCoinbase = "is_coinbase"
-        case sequence
-    }
+// MARK: - DataClass
+struct BTCCOMTransactionData: Codable {
+    let confirmations: UInt
 }
-
-struct BlockstreamTransactionVout: Codable {
-    let scriptpubkey, scriptpubkeyASM, scriptpubkeyType, scriptpubkeyAddress: String
-    let value: Int
-
-    enum CodingKeys: String, CodingKey {
-        case scriptpubkey
-        case scriptpubkeyASM = "scriptpubkey_asm"
-        case scriptpubkeyType = "scriptpubkey_type"
-        case scriptpubkeyAddress = "scriptpubkey_address"
-        case value
-    }
-}
-

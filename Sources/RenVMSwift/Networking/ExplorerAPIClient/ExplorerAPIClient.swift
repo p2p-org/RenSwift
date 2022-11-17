@@ -8,8 +8,8 @@ public protocol ExplorerAPIClient {
     /// - Returns: list of incomming transaction
     func getIncommingTransactions(for address: String) async throws -> [ExplorerAPIIncomingTransaction]
     
-    /// Get transaction info that involves in LockAndMint process
+    /// Observe confirmation of a transaction
     /// - Parameter id: transaction's id
-    /// - Returns: info of the transaction
-    func getTransactionInfo(with id: String) async throws -> ExplorerAPITransaction
+    /// - Returns: data stream of confirmations
+    func observeConfirmations(id: String) -> AsyncStream<UInt>
 }

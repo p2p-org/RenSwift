@@ -237,7 +237,22 @@ public class LockAndMintServiceImpl: LockAndMintService {
                 }
                 // transaction is confirmed, update or add new
                 else {
-                    await persistentStore.markAsConfirmed(transaction, at: date)
+                    
+                    // observe confirmations
+                    Task.detached { [weak self] in
+                        guard let self = self else {return}
+                        
+                        let confirmationsStream = self.sourceChainExplorerAPIClient
+                            .observeConfirmations(id: transaction.id)
+                        for await confirmations in confirmationsStream {
+                            var transaction = transaction
+                            transaction.confirmations = confirmations
+                            await self.persistentStore.markAsReceived(transaction, at: Date())
+                        }
+                        await self.persistentStore.markAsConfirmed(transaction, at: Date())
+                        await self.submitIfNeededAndMintAllTransactionsInQueue()
+                    }
+                    
                 }
             }
         }
@@ -246,7 +261,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         await updateProcessingTransactions()
         
         // submit if needed and mint
-        await submitIfNeededAndMintAllTransactionsInQueue()
+//        await submitIfNeededAndMintAllTransactionsInQueue()
     }
     
     /// Submit if needed and mint array of tx
@@ -256,12 +271,6 @@ public class LockAndMintServiceImpl: LockAndMintService {
         let confirmedAndSubmitedTransactions = groupedTransactions.confirmed + groupedTransactions.submited
         let transactionsToBeProcessed = confirmedAndSubmitedTransactions.filter {
             $0.isProcessing == false
-        }
-        
-        // mark as processing
-        for tx in transactionsToBeProcessed {
-            await persistentStore.markAsProcessing(tx)
-            await updateProcessingTransactions()
         }
         
         // process transactions simutaneously
@@ -290,6 +299,10 @@ public class LockAndMintServiceImpl: LockAndMintService {
         guard tx.state.isConfirmed || tx.state.isSubmited else {
             return
         }
+        
+        // mark as processing
+        await persistentStore.markAsProcessing(tx)
+        await updateProcessingTransactions()
         
         // get infos
         let account = try await destinationChainProvider.getAccount()

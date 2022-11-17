@@ -161,7 +161,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
             
             current[index].state = .confirming
             if current[index].timestamp.voteAt[confirmations] == nil {
-                current[index].timestamp.voteAt[confirmations] = Date()
+                current[index].timestamp.voteAt[confirmations] = date
             }
             return true
         }
