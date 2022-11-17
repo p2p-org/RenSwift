@@ -2,6 +2,19 @@ import Foundation
 import LoggerSwift
 
 extension LockAndMintServiceImpl {
+    /// Clean all current set up
+    func clean() async {
+        // cancel all current tasks
+        tasks.forEach {$0.cancel()}
+        
+        // mark all transaction as not processing
+        await persistentStore.markAllTransactionsAsNotProcessing()
+        
+        // notify
+        stateSubject.send(.initializing)
+        await updateProcessingTransactions()
+    }
+    
     // update current processing transactions
     func updateProcessingTransactions() async {
         processingTxsSubject.send(await persistentStore.processingTransactions)

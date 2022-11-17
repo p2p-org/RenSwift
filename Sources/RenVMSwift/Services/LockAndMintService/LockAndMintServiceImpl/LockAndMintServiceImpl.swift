@@ -122,19 +122,4 @@ public class LockAndMintServiceImpl: LockAndMintService {
         guard let chain = chain, let data = stateSubject.value.response?.gatewayAddress else {return nil}
         return try chain.dataToAddress(data: data)
     }
-    
-    // MARK: - Private
-    
-    /// Clean all current set up
-    private func clean() async {
-        // cancel all current tasks
-        tasks.forEach {$0.cancel()}
-        
-        // mark all transaction as not processing
-        await persistentStore.markAllTransactionsAsNotProcessing()
-        
-        // notify
-        stateSubject.send(.initializing)
-        await updateProcessingTransactions()
-    }
 }
