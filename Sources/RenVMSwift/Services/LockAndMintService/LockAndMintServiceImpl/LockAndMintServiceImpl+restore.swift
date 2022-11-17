@@ -12,7 +12,7 @@ extension LockAndMintServiceImpl {
         
         // process transactions simutaneously
         for tx in transactionsToBeProcessed {
-            Task {
+            Task.detached {
                 try Task.checkCancellation()
                 try await self.submitIfNeededAndMint(tx)
             }

@@ -8,7 +8,7 @@ extension LockAndMintServiceImpl {
                 return
             }
             await getIncommingTransactionsAndMint()
-            try? await Task.sleep(nanoseconds: 1_000_000_000 * UInt64(self.refreshingRate)) // 5 seconds
+            try? await Task.sleep(nanoseconds: 1_000_000_000 * UInt64(refreshingRate)) // 5 seconds
         } while true
     }
     
@@ -18,42 +18,23 @@ extension LockAndMintServiceImpl {
         else { return }
         
         // get incomming transaction
-        guard let incommingTransactions = try? await self.sourceChainExplorerAPIClient.getIncommingTransactions(for: address)
+        guard let incommingTransactions = try? await sourceChainExplorerAPIClient.getIncommingTransactions(for: address)
         else {
             return
         }
         
         // save to persistentStore unsaved transaction
-        for transaction in incommingTransactions {
+        for transaction in incommingTransactions where await !persistentStore.processingTransactions.contains(where: {$0.tx.id == transaction.id}) {
             // get marker date
-            var date = Date()
-            if let blocktime = transaction.blockTime {
-                date = Date(timeIntervalSince1970: TimeInterval(blocktime))
-            }
+            let date = transaction.blockTime == nil ? Date(): Date(timeIntervalSince1970: TimeInterval(transaction.blockTime!))
+            await persistentStore.markAsReceived(transaction, at: date)
             
-            // receive new transaction
-            if !transaction.isConfirmed {
-                // transaction is not confirmed
-                await persistentStore.markAsReceived(transaction, at: date)
-                await notifyChanges()
-            }
-            
-            // update unconfirmed transaction
-            else {
-                // if saved transaction is confirmed
-                if let savedTransaction = await persistentStore.processingTransactions.first(where: {$0.tx.id == transaction.id}),
-                   savedTransaction.state >= .confirmed
-                {
-                    // do nothing, transaction has been added to queue
-                    return
-                }
-                
-                // add to queue and mint if confirmed in separated task
-                Task.detached { [weak self] in
-                    try await self?.addToQueueAndMint(transaction)
-                }
+            // add to queue and mint in separated task
+            Task.detached { [weak self] in
+                try await self?.addToQueueAndMint(transaction)
             }
         }
+        await notifyChanges()
     }
     
     /// Add new received transaction
