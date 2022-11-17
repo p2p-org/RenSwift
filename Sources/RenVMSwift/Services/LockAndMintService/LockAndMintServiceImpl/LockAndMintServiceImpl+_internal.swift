@@ -97,7 +97,9 @@ extension LockAndMintServiceImpl {
         if let transaction = await persistentStore.processingTransactions
             .first(where: {$0.tx.id == transaction.id})
         {
-            try await submitIfNeededAndMint(transaction)
+            Task.detached { [weak self] in
+                try await self?.submitIfNeededAndMint(transaction)
+            }
         }
     }
 
