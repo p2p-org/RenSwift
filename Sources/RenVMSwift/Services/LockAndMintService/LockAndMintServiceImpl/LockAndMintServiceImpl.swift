@@ -183,7 +183,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
             
             // continue previous works in a separated task
             let previousTask = Task<Void, Never>.detached { [weak self] in
-                await self?.continuePreviousTask()
+                await self?.restorePreviousTask()
             }
             tasks.append(previousTask)
             
