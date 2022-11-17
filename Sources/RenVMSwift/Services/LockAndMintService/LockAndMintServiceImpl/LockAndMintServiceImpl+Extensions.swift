@@ -2,188 +2,6 @@ import Foundation
 import LoggerSwift
 
 extension LockAndMintServiceImpl {
-    /// Clean all current set up
-    func clean() async {
-        // cancel all current tasks
-        tasks.forEach {$0.cancel()}
-        
-        // mark all transaction as not processing
-        await persistentStore.markAllTransactionsAsNotProcessing()
-        
-        // notify
-        stateSubject.send(.initializing)
-        await updateProcessingTransactions()
-    }
-    
-    // update current processing transactions
-    func updateProcessingTransactions() async {
-        processingTxsSubject.send(await persistentStore.processingTransactions)
-    }
-    
-    /// Resume the current session
-    func _resume() async {
-        // loading
-        stateSubject.send(.loading)
-        
-        do {
-            // get account
-            let account = try await destinationChainProvider.getAccount()
-            
-            // load chain
-            chain = try await destinationChainProvider.load()
-            
-            // load lock and mint
-            lockAndMint = try LockAndMint(
-                rpcClient: rpcClient,
-                chain: chain!,
-                mintTokenSymbol: mintToken.symbol,
-                version: version,
-                destinationAddress: account.publicKey,
-                session: await persistentStore.session
-            )
-            
-            // get response and estimated fee
-            let (gatewayAddressResponse, estimatedFee) = await(
-                try lockAndMint!.generateGatewayAddress(),
-                try rpcClient.estimateTransactionFee(log: showLog)
-            )
-            
-            let address = try chain!.dataToAddress(data: gatewayAddressResponse.gatewayAddress)
-            await persistentStore.save(gatewayAddress: address)
-            
-            // notify
-            stateSubject.send(.loaded(response: gatewayAddressResponse, estimatedTransactionFee: estimatedFee))
-            
-            // continue previous works in a separated task
-            let previousTask = Task<Void, Never>.detached { [weak self] in
-                await self?.continuePreviousTask()
-            }
-            tasks.append(previousTask)
-            
-            // observe incomming transactions in a seprated task
-            let observingTask = Task<Void, Never>.detached { [weak self] in
-                await self?.observeNewIncommingTransactionsAndMint()
-            }
-            tasks.append(observingTask)
-            
-        } catch {
-            // indicate error
-            stateSubject.send(.error(error))
-        }
-    }
-    
-    /// Continue with saved transactions
-    private func continuePreviousTask() async {
-        // get all transactions that are valid and are not being processed
-        let groupedTransactions = await self.persistentStore.processingTransactions.grouped()
-        let confirmedAndSubmitedTransactions = groupedTransactions.confirmed + groupedTransactions.submited
-        let transactionsToBeProcessed = confirmedAndSubmitedTransactions.filter {
-            $0.isProcessing == false
-        }
-        
-        // process transactions simutaneously
-        await withTaskGroup(of: Void.self) { [weak self] group in
-            for tx in transactionsToBeProcessed {
-                group.addTask { [weak self] in
-                    guard let self = self else {return}
-                    do {
-                        try Task.checkCancellation()
-                        try await self.submitIfNeededAndMint(tx)
-                    } catch {
-                        if self.showLog {
-                            print("submitIfNeededAndMint error: ", error)
-                        }
-                        // do not throw
-                    }
-                }
-            }
-            
-            for await _ in group {}
-        }
-    }
-    
-    /// Observe and mint if there is any new transaction
-    private func observeNewIncommingTransactionsAndMint() async {
-        repeat {
-            if Task.isCancelled {
-                return
-            }
-            await getIncommingTransactionsAndMint()
-            try? await Task.sleep(nanoseconds: 1_000_000_000 * UInt64(self.refreshingRate)) // 5 seconds
-        } while true
-    }
-    
-    /// Get incomming transactions and mint
-    private func getIncommingTransactionsAndMint() async {
-        guard let address = await persistentStore.gatewayAddress
-        else { return }
-        
-        // get incomming transaction
-        guard let incommingTransactions = try? await self.sourceChainExplorerAPIClient.getIncommingTransactions(for: address)
-        else {
-            return
-        }
-        
-        // save to persistentStore unsaved transaction
-        for transaction in incommingTransactions {
-            // get marker date
-            var date = Date()
-            if let blocktime = transaction.blockTime {
-                date = Date(timeIntervalSince1970: TimeInterval(blocktime))
-            }
-            
-            // receive new transaction
-            if !transaction.isConfirmed {
-                // transaction is not confirmed
-                await persistentStore.markAsReceived(transaction, at: date)
-                await updateProcessingTransactions()
-            }
-            
-            // update unconfirmed transaction
-            else {
-                // if saved transaction is confirmed
-                if let savedTransaction = await persistentStore.processingTransactions.first(where: {$0.tx.id == transaction.id}),
-                   savedTransaction.state >= .confirmed
-                {
-                    // do nothing, transaction has been added to queue
-                    return
-                }
-                
-                // add to queue and mint if confirmed in separated task
-                Task.detached { [weak self] in
-                    try await self?.addToQueueAndMint(transaction)
-                }
-            }
-        }
-    }
-    
-    /// Add new received transaction
-    private func addToQueueAndMint(_ transaction: ExplorerAPIIncomingTransaction) async throws {
-        let confirmationsStream = sourceChainExplorerAPIClient
-            .observeConfirmations(id: transaction.id)
-        for await confirmations in confirmationsStream {
-            Task.detached { [weak self] in
-                await self?.updateConfirmationsStatus(transaction: transaction, confirmations: confirmations)
-            }
-        }
-        await persistentStore.markAsConfirmed(transaction, at: Date())
-        await updateProcessingTransactions()
-        
-        if let transaction = await persistentStore.processingTransactions
-            .first(where: {$0.tx.id == transaction.id})
-        {
-            try await submitIfNeededAndMint(transaction)
-        }
-    }
-    
-    /// Update confirmations status
-    private func updateConfirmationsStatus(transaction: ExplorerAPIIncomingTransaction, confirmations: UInt) async {
-        var transaction = transaction
-        transaction.confirmations = confirmations
-        await persistentStore.markAsReceived(transaction, at: Date())
-        await updateProcessingTransactions()
-    }
-    
     /// Submit if needed and mint tx
     func submitIfNeededAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
         // guard for tx that was confirmed or submited only
@@ -193,7 +11,7 @@ extension LockAndMintServiceImpl {
         
         // mark as processing
         await persistentStore.markAsProcessing(tx)
-        await updateProcessingTransactions()
+        await notifyChanges()
         
         // get infos
         let account = try await destinationChainProvider.getAccount()
@@ -220,7 +38,7 @@ extension LockAndMintServiceImpl {
                 let hash = try await lockAndMint.submitMintTransaction(state: state)
                 print("submited transaction with hash: \(hash)")
                 await persistentStore.markAsSubmited(tx.tx, at: Date())
-                await updateProcessingTransactions()
+                await notifyChanges()
             } catch {
                 debugPrint(error)
                 // try to mint anyway, ignore error
@@ -239,7 +57,7 @@ extension LockAndMintServiceImpl {
             do {
                 _ = try await lockAndMint.mint(state: state, signer: account.secret)
                 await self.persistentStore.markAsMinted(tx.tx, at: Date())
-                await self.updateProcessingTransactions()
+                await self.notifyChanges()
             }
             
             // insufficient fund error
@@ -254,7 +72,7 @@ extension LockAndMintServiceImpl {
             catch let error where chain.isAlreadyMintedError(error) {
                 // already minted
                 await self.persistentStore.markAsMinted(tx.tx, at: Date())
-                await self.updateProcessingTransactions()
+                await self.notifyChanges()
             }
             
             // other error
