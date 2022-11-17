@@ -28,12 +28,10 @@ extension LockAndMintServiceImpl {
             // get marker date
             let date = transaction.blockTime == nil ? Date(): Date(timeIntervalSince1970: TimeInterval(transaction.blockTime!))
             await persistentStore.markAsReceived(transaction, at: date)
+            notifyChanges()
             
             // add to queue and mint in separated task
-            Task.detached { [weak self] in
-                await self?.notifyChanges()
-                try await self?.addToQueueAndMint(transaction)
-            }
+            addToQueueAndMint(transaction)
         }
     }
 }

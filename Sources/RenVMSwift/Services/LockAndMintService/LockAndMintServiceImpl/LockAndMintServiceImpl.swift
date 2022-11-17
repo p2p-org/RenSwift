@@ -38,8 +38,11 @@ public class LockAndMintServiceImpl: LockAndMintService {
     /// Chain
     var chain: RenVMChainType?
     
-    /// Tasks for cancellation
-    var tasks = [Task<Void, Never>]()
+    /// Observing task for cancellation
+    var observingTask: Task<Void, Never>?
+    
+    /// Minting task for cancellation
+    var mintingTasks = [Task<Void, Error>]()
     
     /// State
     let stateSubject = CurrentValueSubject<LockAndMintServiceState, Never>(.initializing)

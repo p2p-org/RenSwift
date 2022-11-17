@@ -5,19 +5,24 @@ extension LockAndMintServiceImpl {
     /// Clean all current set up
     func clean() async {
         // cancel all current tasks
-        tasks.forEach {$0.cancel()}
+        observingTask?.cancel()
+        mintingTasks.forEach {$0.cancel()}
         
         // mark all transaction as not processing
         await persistentStore.markAllTransactionsAsNotProcessing()
         
         // notify
         stateSubject.send(.initializing)
-        await notifyChanges()
+        notifyChanges()
     }
     
     // update current processing transactions
-    func notifyChanges() async {
-        processingTxsSubject.send(await persistentStore.processingTransactions)
+    func notifyChanges() {
+        Task.detached { [weak self] in
+            guard let self = self else {return}
+            let transactions = await self.persistentStore.processingTransactions
+            self.processingTxsSubject.send(transactions)
+        }
     }
     
     /// Resume the current session
@@ -58,10 +63,9 @@ extension LockAndMintServiceImpl {
             await restorePreviousTask()
             
             // observe incomming transactions in a seprated task
-            let observingTask = Task<Void, Never>.detached { [weak self] in
+            observingTask = Task<Void, Never>.detached { [weak self] in
                 await self?.observeNewIncommingTransactionsAndMint()
             }
-            tasks.append(observingTask)
             
         } catch {
             // indicate error
@@ -70,17 +74,16 @@ extension LockAndMintServiceImpl {
     }
     
     /// Add new received transaction
-    func addToQueueAndMint(_ transaction: ExplorerAPIIncomingTransaction) async throws {
-        let confirmationsStream = sourceChainExplorerAPIClient
-            .observeConfirmations(id: transaction.id)
-        for await confirmations in confirmationsStream {
-            Task.detached { [weak self] in
-                await self?.updateConfirmationsStatus(transaction: transaction, confirmations: confirmations)
+    func addToQueueAndMint(_ transaction: ExplorerAPIIncomingTransaction) {
+        mintingTasks.append(Task<Void, Error>.detached { [weak self] in
+            guard let self = self else {return}
+            let confirmationsStream = self.sourceChainExplorerAPIClient
+                .observeConfirmations(id: transaction.id)
+            for await confirmations in confirmationsStream {
+                await self.updateConfirmationsStatus(transaction: transaction, confirmations: confirmations)
             }
-        }
-        Task.detached { [weak self] in
-            try await self?.markAsConfirmedAndMint(transaction: transaction)
-        }
+            try await self.markAsConfirmedAndMint(transaction: transaction)
+        })
     }
     
     /// Update confirmations status
@@ -88,13 +91,13 @@ extension LockAndMintServiceImpl {
         var transaction = transaction
         transaction.confirmations = confirmations
         await persistentStore.markAsReceived(transaction, at: Date())
-        await notifyChanges()
+        notifyChanges()
     }
     
     /// Mark transaction as confirmed and mint
     private func markAsConfirmedAndMint(transaction: ExplorerAPIIncomingTransaction) async throws {
         await persistentStore.markAsConfirmed(transaction, at: Date())
-        await notifyChanges()
+        notifyChanges()
         
         if let transaction = await persistentStore.processingTransactions
             .first(where: {$0.tx.id == transaction.id})
@@ -107,7 +110,7 @@ extension LockAndMintServiceImpl {
     private func submitIfNeededAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
         // mark as processing
         await persistentStore.markAsProcessing(tx)
-        await notifyChanges()
+        notifyChanges()
         
         // get infos
         let account = try await destinationChainProvider.getAccount()
@@ -134,7 +137,7 @@ extension LockAndMintServiceImpl {
                 let hash = try await lockAndMint.submitMintTransaction(state: state)
                 print("submited transaction with hash: \(hash)")
                 await persistentStore.markAsSubmited(tx.tx, at: Date())
-                await notifyChanges()
+                notifyChanges()
             } catch {
                 debugPrint(error)
                 // try to mint anyway, ignore error
@@ -153,7 +156,7 @@ extension LockAndMintServiceImpl {
             do {
                 _ = try await lockAndMint.mint(state: state, signer: account.secret)
                 await self.persistentStore.markAsMinted(tx.tx, at: Date())
-                await self.notifyChanges()
+                self.notifyChanges()
             }
             
             // insufficient fund error
@@ -168,7 +171,7 @@ extension LockAndMintServiceImpl {
             catch let error where chain.isAlreadyMintedError(error) {
                 // already minted
                 await self.persistentStore.markAsMinted(tx.tx, at: Date())
-                await self.notifyChanges()
+                self.notifyChanges()
             }
             
             // other error

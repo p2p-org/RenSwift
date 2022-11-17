@@ -101,28 +101,3 @@ extension LockAndMint {
         }
     }
 }
-
-extension Array where Element == LockAndMint.ProcessingTx {
-    func grouped() -> (minted: [Element], submited: [Element], confirmed: [Element], received: [Element], ignored: [Element]) {
-        var minted = [Element]()
-        var submited = [Element]()
-        var confirmed = [Element]()
-        var received = [Element]()
-        var ignored = [Element]()
-        for tx in self {
-            switch tx.state {
-            case .minted:
-                minted.append(tx)
-            case .submited:
-                submited.append(tx)
-            case .confirmed:
-                confirmed.append(tx)
-            case .confirming:
-                received.append(tx)
-            case .ignored:
-                ignored.append(tx)
-            }
-        }
-        return (minted: minted, submited: submited, confirmed: confirmed, received: received, ignored: ignored)
-    }
-}
