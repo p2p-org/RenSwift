@@ -3,6 +3,9 @@ import LoggerSwift
 
 /// Default protocol for explorer api
 public protocol ExplorerAPIClient {
+    /// Max confirmations to mark transaction as confirmed
+    static var maxConfirmations: UInt { get }
+    
     /// Get incomming transaction for LockAndMint process
     /// - Parameter address: gateway address
     /// - Returns: list of incomming transaction

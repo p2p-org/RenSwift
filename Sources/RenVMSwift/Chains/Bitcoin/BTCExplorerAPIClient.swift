@@ -7,7 +7,7 @@ public class BTCExplorerAPIClient: ExplorerAPIClient {
     // MARK: - Constants
     
     /// Max confirmation for BTC network
-    private let maxConfirmations: UInt = 6
+    public static let maxConfirmations: UInt = 6
     
     // MARK: - Properties
     
@@ -70,7 +70,7 @@ public class BTCExplorerAPIClient: ExplorerAPIClient {
                 
                 continuation.yield(confirmations)
                 
-                if confirmations < self.maxConfirmations {
+                if confirmations < Self.maxConfirmations {
                     throw BTCExplorerAPIClientError.notYetConfirmed
                 }
                 
