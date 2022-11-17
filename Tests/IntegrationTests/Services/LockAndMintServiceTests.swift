@@ -16,7 +16,8 @@ class LockAndMintServiceTests: XCTestCase {
     override func setUp() async throws {
         service = LockAndMintServiceImpl(
             persistentStore: persistentStore,
-            chainProvider: SolanaChainProvider(),
+            destinationChainProvider: SolanaChainProvider(),
+            sourceChainExplorerAPIClient: BTCExplorerAPIClient(network: renNetwork),
             rpcClient: renRPCClient,
             mintToken: .bitcoin,
             version: "1",

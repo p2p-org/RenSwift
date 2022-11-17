@@ -30,16 +30,16 @@ public protocol LockAndMintServicePersistentStore {
     func markAllTransactionsAsNotProcessing() async
     
     /// Mark as received
-    func markAsReceived(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async
+    func markAsReceived(_ incomingTransaction: ExplorerAPIIncomingTransaction, at date: Date) async
     
     /// Mark as confimed
-    func markAsConfirmed(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async
+    func markAsConfirmed(_ incomingTransaction: ExplorerAPIIncomingTransaction, at date: Date) async
     
     /// Mark as submited
-    func markAsSubmited(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async
+    func markAsSubmited(_ incomingTransaction: ExplorerAPIIncomingTransaction, at date: Date) async
     
     /// Mark as minted
-    func markAsMinted(_ incomingTransaction: LockAndMint.IncomingTransaction, at date: Date) async
+    func markAsMinted(_ incomingTransaction: ExplorerAPIIncomingTransaction, at date: Date) async
     
     /// Mark as invalid
     func markAsInvalid(txid: String, error: LockAndMint.ProcessingError, at date: Date) async
@@ -101,12 +101,32 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     // MARK: - Processing transactions
     
     public var processingTransactions: [LockAndMint.ProcessingTx] {
-        getFromUserDefault(key: userDefaultKeyForProcessingTransactions) ?? []
+        // Migration
+        struct ProcessingTx_Deprecated: Codable, Hashable {
+            var tx: BlockstreamIncomingTransaction
+            var state: LockAndMint.ProcessingTx.State
+            var isProcessing: Bool = false
+            var timestamp: LockAndMint.ProcessingTx.Timestamp = .init()
+        }
+        
+        if let deprecatedTxs: [ProcessingTx_Deprecated] = getFromUserDefault(key: userDefaultKeyForProcessingTransactions) {
+            return deprecatedTxs.map {
+                LockAndMint.ProcessingTx(
+                    tx: $0.tx.mapToExplorerAPIIncomingTransaction(),
+                    state: $0.state,
+                    isProcessing: $0.isProcessing,
+                    timestamp: $0.timestamp
+                )
+            }
+        }
+        
+        // New data type
+        return getFromUserDefault(key: userDefaultKeyForProcessingTransactions) ?? []
     }
     
     public func markAsProcessing(_ transaction: LockAndMint.ProcessingTx) {
         save { current in
-            guard let index = current.indexOf(transaction.tx.txid) else {
+            guard let index = current.indexOf(transaction.tx.id) else {
                 return false
             }
             current[index].isProcessing = true
@@ -114,7 +134,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
         
         if showLog {
-            Logger.log(event: .request, message: "Transaction with id \(transaction.tx.txid), vout: \(transaction.tx.vout), isConfirmed: \(transaction.tx.status.confirmed), value: \(transaction.tx.value) is being processed")
+            Logger.log(event: .request, message: "Transaction is being processed \(transaction.tx)")
         }
     }
     
@@ -131,26 +151,27 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
     }
     
-    public func markAsReceived(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
+    public func markAsReceived(_ tx: ExplorerAPIIncomingTransaction, at date: Date) {
+        let confirmations = tx.confirmations ?? 0
         save { current in
             guard let index = current.indexOf(tx) else {
-                current.append(.init(tx: tx, state: .confirming, timestamp: .init(voteAt: [tx.vout: Date()])))
+                current.append(.init(tx: tx, state: .confirming, timestamp: .init(voteAt: [confirmations: Date()])))
                 return true
             }
             
             current[index].state = .confirming
-            if current[index].timestamp.voteAt[tx.vout] == nil {
-                current[index].timestamp.voteAt[tx.vout] = Date()
+            if current[index].timestamp.voteAt[confirmations] == nil {
+                current[index].timestamp.voteAt[confirmations] = Date()
             }
             return true
         }
         
         if showLog {
-            Logger.log(event: .event, message: "Received transaction with id \(tx.txid), vout: \(tx.vout), isConfirmed: \(tx.status.confirmed), value: \(tx.value)")
+            Logger.log(event: .event, message: "Received transaction \(tx)")
         }
     }
     
-    public func markAsConfirmed(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
+    public func markAsConfirmed(_ tx: ExplorerAPIIncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, state: .confirmed, timestamp: .init(confirmedAt: Date())))
@@ -164,11 +185,11 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
         
         if showLog {
-            Logger.log(event: .event, message: "Transaction with id \(tx.txid) has been confirmed, vout: \(tx.vout), value: \(tx.value)")
+            Logger.log(event: .event, message: "Transaction has been confirmed \(tx)")
         }
     }
     
-    public func markAsSubmited(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
+    public func markAsSubmited(_ tx: ExplorerAPIIncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, state: .submited, timestamp: .init(submitedAt: Date())))
@@ -182,11 +203,11 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
         
         if showLog {
-            Logger.log(event: .event, message: "Transaction with id \(tx.txid) has been submited, value: \(tx.value)")
+            Logger.log(event: .event, message: "Transaction has been submited \(tx)")
         }
     }
     
-    public func markAsMinted(_ tx: LockAndMint.IncomingTransaction, at date: Date) {
+    public func markAsMinted(_ tx: ExplorerAPIIncomingTransaction, at date: Date) {
         save { current in
             guard let index = current.indexOf(tx) else {
                 current.append(.init(tx: tx, state: .minted, timestamp: .init(submitedAt: Date())))
@@ -200,7 +221,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
         }
         
         if showLog {
-            Logger.log(event: .event, message: "Transaction with id \(tx.txid) has been minted, value: \(tx.value)")
+            Logger.log(event: .event, message: "Transaction has been minted \(tx)")
         }
     }
     
@@ -246,7 +267,7 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
     }
     
     private func save(_ modify: @escaping (inout [LockAndMint.ProcessingTx]) -> Bool) {
-        var current: [LockAndMint.ProcessingTx] = getFromUserDefault(key: userDefaultKeyForProcessingTransactions) ?? []
+        var current: [LockAndMint.ProcessingTx] = processingTransactions
         let shouldSave = modify(&current)
         if shouldSave {
             saveToUserDefault(current, key: userDefaultKeyForProcessingTransactions)
@@ -255,15 +276,15 @@ public actor UserDefaultLockAndMintServicePersistentStore: LockAndMintServicePer
 }
 
 private extension Array where Element == LockAndMint.ProcessingTx {
-    func hasTx(_ tx: LockAndMint.IncomingTransaction) -> Bool {
-        contains(where: { $0.tx.txid == tx.txid })
+    func hasTx(_ tx: ExplorerAPIIncomingTransaction) -> Bool {
+        contains(where: { $0.tx.id == tx.id })
     }
 
-    func indexOf(_ tx: LockAndMint.IncomingTransaction) -> Int? {
-        firstIndex(where: { $0.tx.txid == tx.txid })
+    func indexOf(_ tx: ExplorerAPIIncomingTransaction) -> Int? {
+        firstIndex(where: { $0.tx.id == tx.id })
     }
     
     func indexOf(_ txid: String) -> Int? {
-        firstIndex(where: { $0.tx.txid == txid })
+        firstIndex(where: { $0.tx.id == txid })
     }
 }

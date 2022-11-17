@@ -13,6 +13,7 @@ class LockAndMintTests: XCTestCase {
     var renRPCClient: RpcClient!
     var solanaRPCClient: JSONRPCAPIClient!
     var solanaBlockchainClient: BlockchainClient!
+    var btcExplorerAPIClient: BTCExplorerAPIClient!
     
     override func setUp() async throws {
         account = try await Account(
@@ -22,6 +23,7 @@ class LockAndMintTests: XCTestCase {
         renRPCClient = .init(network: renNetwork)
         solanaRPCClient = .init(endpoint: .init(address: solanaURL, network: solanaNetwork))
         solanaBlockchainClient = .init(apiClient: solanaRPCClient)
+        btcExplorerAPIClient = .init(network: renNetwork)
     }
     
     override func tearDown() async throws {
@@ -29,6 +31,7 @@ class LockAndMintTests: XCTestCase {
         renRPCClient = nil
         solanaRPCClient = nil
         solanaBlockchainClient = nil
+        btcExplorerAPIClient = nil
     }
     
     func testLockAndMint() async throws {
@@ -59,18 +62,18 @@ class LockAndMintTests: XCTestCase {
         XCTAssertEqual(address, "2N5crcCGWhn1LUkPpV2ttDKupUncAcXJ4yM")
         
         // Get stream infos, retry until a tx is confirmed
-        let streamInfos = try await Task<[LockAndMint.IncomingTransaction], Error>.retrying(
+        let streamInfos = try await Task<[ExplorerAPIIncomingTransaction], Error>.retrying(
             where: { error in
                 (error as? TestError) == .noStreamInfo
             },
             maxRetryCount: .max,
             retryDelay: 5
         ) {
-            let streamInfos = try? await self.renRPCClient.getIncomingTransactions(address: address)
+            let streamInfos = try? await self.btcExplorerAPIClient.getIncommingTransactions(for: address)
             
             guard let streamInfos = streamInfos,
                   !streamInfos.isEmpty,
-                  streamInfos.contains(where: {$0.status.confirmed})
+                  streamInfos.contains(where: {$0.isConfirmed})
             else {
                 throw TestError.noStreamInfo
             }
@@ -78,10 +81,10 @@ class LockAndMintTests: XCTestCase {
         }.value
         
         // Get confirmed one
-        let tx = streamInfos.first(where: {$0.status.confirmed})!
+        let tx = streamInfos.first(where: {$0.isConfirmed})!
         
         let state = try lockAndMint.getDepositState(
-            transactionHash: tx.txid,
+            transactionHash: tx.id,
             txIndex: String(tx.vout),
             amount: String(tx.value),
             sendTo: response.sendTo,

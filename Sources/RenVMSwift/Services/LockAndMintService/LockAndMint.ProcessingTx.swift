@@ -8,7 +8,7 @@ extension LockAndMint {
     
     public struct ProcessingTx: Codable, Hashable {
         public static var maxVote: UInt = 3
-        public var tx: LockAndMint.IncomingTransaction
+        public var tx: ExplorerAPIIncomingTransaction
         public var state: State
         public var isProcessing: Bool = false
         public var timestamp: Timestamp = .init()

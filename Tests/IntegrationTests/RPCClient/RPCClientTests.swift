@@ -15,12 +15,6 @@ class RPCClientTests: XCTestCase {
         XCTAssertNotNil(queryConfig)
     }
     
-    func testGetBlockStreamInfo() async throws {
-        let rpcClient = RpcClient(network: .testnet)
-        let result = try await rpcClient.getIncomingTransactions(address: "2N5crcCGWhn1LUkPpV2ttDKupUncAcXJ4yM")
-        print(result)
-    }
-    
     func testEstimateTransactionFee() async throws {
         let rpcClient = RpcClient(network: .mainnet)
         let result = try await rpcClient.estimateTransactionFee(log: true)

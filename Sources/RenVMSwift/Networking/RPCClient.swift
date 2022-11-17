@@ -5,7 +5,6 @@ public protocol RenVMRpcClientType {
     var network: Network {get}
     func call<T: Decodable>(endpoint: String, method: String, params: Encodable, log: Bool) async throws -> T
     func selectPublicKey(mintTokenSymbol: String) async throws -> Data?
-    func getIncomingTransactions(address: String) async throws -> [LockAndMint.IncomingTransaction]
 }
 
 public extension RenVMRpcClientType {
@@ -119,18 +118,6 @@ public struct RpcClient: RenVMRpcClientType {
         }
         
         throw res.error ?? .unknown
-    }
-    
-    public func getIncomingTransactions(address: String) async throws -> [LockAndMint.IncomingTransaction] {
-        let urlString = "https://blockstream.info\(network.isTestnet ? "/testnet": "")/api/address/\(address)/utxo"
-        guard let url = URL(string: urlString)
-        else {
-            throw RenVMError.invalidEndpoint
-        }
-        Logger.log(event: .request, message: urlString)
-        let (data, _) = try await URLSession.shared.data(for: url)
-        Logger.log(event: .response, message: String(data: data, encoding: .utf8) ?? "")
-        return try JSONDecoder().decode([LockAndMint.IncomingTransaction].self, from: data)
     }
     
     struct Body: Encodable {
