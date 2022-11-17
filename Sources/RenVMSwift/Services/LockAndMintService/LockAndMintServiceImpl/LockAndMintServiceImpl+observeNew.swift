@@ -32,6 +32,7 @@ extension LockAndMintServiceImpl {
             
             // add to queue and mint in separated task
             addToQueueAndMint(transaction)
+            try? await Task.sleep(nanoseconds: 3_000_000_000) // sleep 3s to reduce abusing btc.com
         }
     }
 }
