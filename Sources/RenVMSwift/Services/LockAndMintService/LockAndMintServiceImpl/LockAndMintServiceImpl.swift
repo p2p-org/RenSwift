@@ -190,7 +190,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
                     if Task.isCancelled {
                         return
                     }
-                    try? await self.getIncommingTransactionsAndMint()
+                    await self.getIncommingTransactionsAndMint()
                     try? await Task.sleep(nanoseconds: 1_000_000_000 * UInt64(self.refreshingRate)) // 5 seconds
                 } while true
             }
@@ -203,7 +203,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     /// Get incomming transactions and mint
-    private func getIncommingTransactionsAndMint() async throws {
+    private func getIncommingTransactionsAndMint() async {
         guard let address = await persistentStore.gatewayAddress
         else { return }
         
