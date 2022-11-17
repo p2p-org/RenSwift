@@ -105,11 +105,6 @@ extension LockAndMintServiceImpl {
 
     /// Submit if needed and mint tx
     private func submitIfNeededAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
-        // guard for tx that was confirmed or submited only
-        guard tx.state.isConfirmed || tx.state.isSubmited else {
-            return
-        }
-        
         // mark as processing
         await persistentStore.markAsProcessing(tx)
         await notifyChanges()
