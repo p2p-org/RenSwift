@@ -53,7 +53,7 @@ public class BTCExplorerAPIClient: ExplorerAPIClient {
                     return true
                 },
                 maxRetryCount: .max,
-                retryDelay: 10, // seconds
+                retryDelay: 5 * 60, // 5m
                 timeoutInSeconds: 60 * 60 // 1h
             ) { [weak self] in
                 guard let self = self else {

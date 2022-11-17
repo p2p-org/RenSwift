@@ -11,23 +11,11 @@ extension LockAndMintServiceImpl {
         }
         
         // process transactions simutaneously
-        await withTaskGroup(of: Void.self) { [weak self] group in
-            for tx in transactionsToBeProcessed {
-                group.addTask { [weak self] in
-                    guard let self = self else {return}
-                    do {
-                        try Task.checkCancellation()
-                        try await self.submitIfNeededAndMint(tx)
-                    } catch {
-                        if self.showLog {
-                            print("submitIfNeededAndMint error: ", error)
-                        }
-                        // do not throw
-                    }
-                }
+        for tx in transactionsToBeProcessed {
+            Task {
+                try Task.checkCancellation()
+                try await self.submitIfNeededAndMint(tx)
             }
-            
-            for await _ in group {}
         }
     }
 }

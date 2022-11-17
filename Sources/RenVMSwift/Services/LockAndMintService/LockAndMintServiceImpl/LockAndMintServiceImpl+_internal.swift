@@ -54,11 +54,8 @@ extension LockAndMintServiceImpl {
             // notify
             stateSubject.send(.loaded(response: gatewayAddressResponse, estimatedTransactionFee: estimatedFee))
             
-            // continue previous works in a separated task
-            let previousTask = Task<Void, Never>.detached { [weak self] in
-                await self?.restorePreviousTask()
-            }
-            tasks.append(previousTask)
+            // continue previous works
+            await restorePreviousTask()
             
             // observe incomming transactions in a seprated task
             let observingTask = Task<Void, Never>.detached { [weak self] in
