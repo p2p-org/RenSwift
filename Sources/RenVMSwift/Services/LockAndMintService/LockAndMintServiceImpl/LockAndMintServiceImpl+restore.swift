@@ -5,7 +5,7 @@ extension LockAndMintServiceImpl {
     func restorePreviousTask() async {
         // get all transactions that are valid and are not being processed
         let groupedTransactions = await persistentStore.processingTransactions.grouped()
-        let confirmedAndSubmitedTransactions = groupedTransactions.confirmed + groupedTransactions.submited
+        let confirmedAndSubmitedTransactions = groupedTransactions.received + groupedTransactions.confirmed + groupedTransactions.submited
         let transactionsToBeProcessed = confirmedAndSubmitedTransactions.filter {
             $0.isProcessing == false
         }
