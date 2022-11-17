@@ -14,7 +14,7 @@ extension LockAndMintServiceImpl {
         for tx in transactionsToBeProcessed {
             Task.detached {
                 try Task.checkCancellation()
-                try await self.submitIfNeededAndMint(tx)
+                try await self.addToQueueAndMint(tx.tx)
             }
         }
     }

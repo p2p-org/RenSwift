@@ -68,9 +68,41 @@ extension LockAndMintServiceImpl {
             stateSubject.send(.error(error))
         }
     }
+    
+    /// Add new received transaction
+    func addToQueueAndMint(_ transaction: ExplorerAPIIncomingTransaction) async throws {
+        let confirmationsStream = sourceChainExplorerAPIClient
+            .observeConfirmations(id: transaction.id)
+        for await confirmations in confirmationsStream {
+            Task.detached { [weak self] in
+                await self?.updateConfirmationsStatus(transaction: transaction, confirmations: confirmations)
+            }
+        }
+        try await markAsConfirmedAndMint(transaction: transaction)
+    }
+    
+    /// Update confirmations status
+    private func updateConfirmationsStatus(transaction: ExplorerAPIIncomingTransaction, confirmations: UInt) async {
+        var transaction = transaction
+        transaction.confirmations = confirmations
+        await persistentStore.markAsReceived(transaction, at: Date())
+        await notifyChanges()
+    }
+    
+    /// Mark transaction as confirmed and mint
+    private func markAsConfirmedAndMint(transaction: ExplorerAPIIncomingTransaction) async throws {
+        await persistentStore.markAsConfirmed(transaction, at: Date())
+        await notifyChanges()
+        
+        if let transaction = await persistentStore.processingTransactions
+            .first(where: {$0.tx.id == transaction.id})
+        {
+            try await submitIfNeededAndMint(transaction)
+        }
+    }
 
     /// Submit if needed and mint tx
-    func submitIfNeededAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
+    private func submitIfNeededAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
         // guard for tx that was confirmed or submited only
         guard tx.state.isConfirmed || tx.state.isSubmited else {
             return
