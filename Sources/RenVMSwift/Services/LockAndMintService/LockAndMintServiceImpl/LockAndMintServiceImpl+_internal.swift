@@ -78,7 +78,9 @@ extension LockAndMintServiceImpl {
                 await self?.updateConfirmationsStatus(transaction: transaction, confirmations: confirmations)
             }
         }
-        try await markAsConfirmedAndMint(transaction: transaction)
+        Task.detached { [weak self] in
+            try await self?.markAsConfirmedAndMint(transaction: transaction)
+        }
     }
     
     /// Update confirmations status
@@ -97,9 +99,7 @@ extension LockAndMintServiceImpl {
         if let transaction = await persistentStore.processingTransactions
             .first(where: {$0.tx.id == transaction.id})
         {
-            Task.detached { [weak self] in
-                try await self?.submitIfNeededAndMint(transaction)
-            }
+            try await submitIfNeededAndMint(transaction)
         }
     }
 
