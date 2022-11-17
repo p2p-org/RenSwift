@@ -43,15 +43,9 @@ public class LockAndMintServiceImpl: LockAndMintService {
     
     /// State
     let stateSubject = CurrentValueSubject<LockAndMintServiceState, Never>(.initializing)
-    public var statePublisher: AnyPublisher<LockAndMintServiceState, Never> {
-        stateSubject.eraseToAnyPublisher()
-    }
     
     /// ProcessingTxs
     let processingTxsSubject = CurrentValueSubject<[LockAndMint.ProcessingTx], Never>([])
-    public var processingTxsPublisher: AnyPublisher<[LockAndMint.ProcessingTx], Never> {
-        processingTxsSubject.eraseToAnyPublisher()
-    }
     
     // MARK: - Initializers
     
@@ -76,6 +70,16 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     deinit {}
+    
+    /// State
+    public var statePublisher: AnyPublisher<LockAndMintServiceState, Never> {
+        stateSubject.eraseToAnyPublisher()
+    }
+    
+    /// processing tx
+    public var processingTxsPublisher: AnyPublisher<[LockAndMint.ProcessingTx], Never> {
+        processingTxsSubject.eraseToAnyPublisher()
+    }
     
     /// Start the service
     public func resume() async {
