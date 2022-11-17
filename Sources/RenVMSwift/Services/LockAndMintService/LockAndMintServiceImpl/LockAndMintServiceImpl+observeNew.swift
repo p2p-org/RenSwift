@@ -65,14 +65,7 @@ extension LockAndMintServiceImpl {
                 await self?.updateConfirmationsStatus(transaction: transaction, confirmations: confirmations)
             }
         }
-        await persistentStore.markAsConfirmed(transaction, at: Date())
-        await notifyChanges()
-        
-        if let transaction = await persistentStore.processingTransactions
-            .first(where: {$0.tx.id == transaction.id})
-        {
-            try await submitIfNeededAndMint(transaction)
-        }
+        try await markAsConfirmedAndMint(transaction: transaction)
     }
     
     /// Update confirmations status
@@ -81,5 +74,17 @@ extension LockAndMintServiceImpl {
         transaction.confirmations = confirmations
         await persistentStore.markAsReceived(transaction, at: Date())
         await notifyChanges()
+    }
+    
+    /// Mark transaction as confirmed and mint
+    private func markAsConfirmedAndMint(transaction: ExplorerAPIIncomingTransaction) async throws {
+        await persistentStore.markAsConfirmed(transaction, at: Date())
+        await notifyChanges()
+        
+        if let transaction = await persistentStore.processingTransactions
+            .first(where: {$0.tx.id == transaction.id})
+        {
+            try await submitIfNeededAndMint(transaction)
+        }
     }
 }
