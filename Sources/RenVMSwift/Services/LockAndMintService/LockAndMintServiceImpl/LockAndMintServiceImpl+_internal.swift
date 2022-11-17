@@ -2,6 +2,76 @@ import Foundation
 import LoggerSwift
 
 extension LockAndMintServiceImpl {
+    /// Clean all current set up
+    func clean() async {
+        // cancel all current tasks
+        tasks.forEach {$0.cancel()}
+        
+        // mark all transaction as not processing
+        await persistentStore.markAllTransactionsAsNotProcessing()
+        
+        // notify
+        stateSubject.send(.initializing)
+        await notifyChanges()
+    }
+    
+    // update current processing transactions
+    func notifyChanges() async {
+        processingTxsSubject.send(await persistentStore.processingTransactions)
+    }
+    
+    /// Resume the current session
+    func _resume() async {
+        // loading
+        stateSubject.send(.loading)
+        
+        do {
+            // get account
+            let account = try await destinationChainProvider.getAccount()
+            
+            // load chain
+            chain = try await destinationChainProvider.load()
+            
+            // load lock and mint
+            lockAndMint = try LockAndMint(
+                rpcClient: rpcClient,
+                chain: chain!,
+                mintTokenSymbol: mintToken.symbol,
+                version: version,
+                destinationAddress: account.publicKey,
+                session: await persistentStore.session
+            )
+            
+            // get response and estimated fee
+            let (gatewayAddressResponse, estimatedFee) = await(
+                try lockAndMint!.generateGatewayAddress(),
+                try rpcClient.estimateTransactionFee(log: showLog)
+            )
+            
+            let address = try chain!.dataToAddress(data: gatewayAddressResponse.gatewayAddress)
+            await persistentStore.save(gatewayAddress: address)
+            
+            // notify
+            stateSubject.send(.loaded(response: gatewayAddressResponse, estimatedTransactionFee: estimatedFee))
+            
+            // continue previous works in a separated task
+            let previousTask = Task<Void, Never>.detached { [weak self] in
+                await self?.restorePreviousTask()
+            }
+            tasks.append(previousTask)
+            
+            // observe incomming transactions in a seprated task
+            let observingTask = Task<Void, Never>.detached { [weak self] in
+                await self?.observeNewIncommingTransactionsAndMint()
+            }
+            tasks.append(observingTask)
+            
+        } catch {
+            // indicate error
+            stateSubject.send(.error(error))
+        }
+    }
+
     /// Submit if needed and mint tx
     func submitIfNeededAndMint(_ tx: LockAndMint.ProcessingTx) async throws {
         // guard for tx that was confirmed or submited only
