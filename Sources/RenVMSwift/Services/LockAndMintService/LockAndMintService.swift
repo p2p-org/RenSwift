@@ -10,13 +10,13 @@ public protocol LockAndMintService: AnyObject {
     var processingTxsPublisher: AnyPublisher<[LockAndMint.ProcessingTx], Never> { get }
     
     /// Resume the service
-    func resume() async throws
+    func resume() async
     
     /// Create new session
     func createSession(endAt: Date?) async throws
     
     /// expire session
-    func expireCurrentSession() async throws
+    func expireCurrentSession() async
     
     /// get gateway address
     func getCurrentGatewayAddress() throws -> String?

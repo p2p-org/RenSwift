@@ -77,7 +77,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     deinit {}
     
     /// Start the service
-    public func resume() async throws {
+    public func resume() async {
         // clean
         await clean()
         
@@ -89,7 +89,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
         }
         
         // resume
-        try await _resume()
+        await _resume()
     }
     
     /// Create new session
@@ -104,11 +104,11 @@ public class LockAndMintServiceImpl: LockAndMintService {
         await persistentStore.save(session: session)
         
         // resume
-        try await _resume()
+        await _resume()
     }
     
     /// Expire current session
-    public func expireCurrentSession() async throws {
+    public func expireCurrentSession() async {
         // clean
         await clean()
         
@@ -138,7 +138,7 @@ public class LockAndMintServiceImpl: LockAndMintService {
     }
     
     /// Resume the current session
-    private func _resume() async throws {
+    private func _resume() async {
         // loading
         stateSubject.send(.loading)
         
