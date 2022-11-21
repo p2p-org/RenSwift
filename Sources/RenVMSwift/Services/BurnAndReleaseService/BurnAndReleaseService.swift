@@ -14,7 +14,7 @@ public protocol BurnAndReleaseService {
     ///   - recipient: receiver
     ///   - amount: amount to be sent
     /// - Returns: transaction signature
-    func burnAndRelease(recipient: String, amount: UInt64) async throws -> String
+    func burnAndRelease(recipient: String, amount: UInt64, waitForReleasing: Bool) async throws -> String
 }
 
 /// Implementation of BurnAndReleaseService
@@ -90,7 +90,7 @@ public class BurnAndReleaseServiceImpl: BurnAndReleaseService {
         return lamports.convertToBalance(decimals: destinationChain.decimals)
     }
 
-    public func burnAndRelease(recipient: String, amount: UInt64) async throws -> String {
+    public func burnAndRelease(recipient: String, amount: UInt64, waitForReleasing: Bool) async throws -> String {
         let account = try await chainProvider.getAccount()
         let burnAndRelease = try await getBurnAndRelease()
         let burnDetails = try await burnAndRelease.submitBurnTransaction(
@@ -102,13 +102,26 @@ public class BurnAndReleaseServiceImpl: BurnAndReleaseService {
         
         await persistentStore.persistNonReleasedTransactions(burnDetails)
         
-        if let chain = chain {
-            try await chain.waitForConfirmation(signature: burnDetails.confirmedSignature)
+        if waitForReleasing {
+            if let chain = chain {
+                try await chain.waitForConfirmation(signature: burnDetails.confirmedSignature)
+            }
+            let signature = try await release(burnDetails)
+            
+            await persistentStore.markAsReleased(burnDetails)
+            return signature
+        } else {
+            Task.detached { [weak self] in
+                guard let self = self else { return }
+                if let chain = self.chain {
+                    try await chain.waitForConfirmation(signature: burnDetails.confirmedSignature)
+                }
+                let signature = try await self.release(burnDetails)
+                
+                await self.persistentStore.markAsReleased(burnDetails)
+            }
+            return burnDetails.confirmedSignature
         }
-        let signature = try await release(burnDetails)
-        
-        await persistentStore.markAsReleased(burnDetails)
-        return signature
     }
     
     // MARK: - Private
