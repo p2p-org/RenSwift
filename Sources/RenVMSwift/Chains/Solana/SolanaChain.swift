@@ -336,7 +336,7 @@ extension SolanaChain {
             try underlyingDecimals.serialize(to: &writer)
         }
         
-        struct RenVMAuthority: BorshCodable, Codable {
+        struct RenVMAuthority: BorshCodable, Codable, Equatable {
             let bytes: [UInt8]
             
             init(from reader: inout BinaryReader) throws {
@@ -348,7 +348,7 @@ extension SolanaChain {
             }
         }
         
-        struct Selectors: BorshCodable, Codable {
+        struct Selectors: BorshCodable, Codable, Equatable {
             let bytes: [UInt8]
             
             init(from reader: inout BinaryReader) throws {
