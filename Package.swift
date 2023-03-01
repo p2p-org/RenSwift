@@ -18,7 +18,8 @@ let package = Package(
             targets: ["RenVMSwift"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/p2p-org/solana-swift.git", from: "2.1.1")
+        .package(url: "https://github.com/p2p-org/solana-swift.git", from: "2.1.1"),
+        .package(url: "https://github.com/bigearsenal/LoggerSwift.git", from: "1.0.2"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -26,7 +27,8 @@ let package = Package(
         .target(
             name: "RenVMSwift",
             dependencies: [
-                .product(name: "SolanaSwift", package: "solana-swift")
+                .product(name: "SolanaSwift", package: "solana-swift"),
+                .product(name: "LoggerSwift", package: "LoggerSwift"),
             ]
         ),
         
